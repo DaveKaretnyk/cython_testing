@@ -48,4 +48,4 @@ windir=C:\WINDOWS
 WixToolPath=C:\Users\dave\scoop\apps\wixtoolset\current
 WSLENV=WT_SESSION::WT_PROFILE_ID
 WT_PROFILE_ID={0caa0dad-35be-5f56-a8ff-afceeeaa6101}
-WT_SESSION=5f298fc8-db07-41e7-93da-81aedadc289b
+WT_SESSION=3586c758-1c80-494f-8c8a-9addfb6be543
