@@ -221,3 +221,8 @@ docs/_build
 
 # Cython generated source.
 **/*.c
+
+# Dir to deploy transpiled code to for testing.
+/my_utils/*.pyx
+/my_utils/*.pyd
+
