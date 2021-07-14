@@ -225,4 +225,4 @@ docs/_build
 # Dir to deploy transpiled code to for testing.
 /my_utils/*.pyx
 /my_utils/*.pyd
-
+!vs_env/call_compiler/*.log
