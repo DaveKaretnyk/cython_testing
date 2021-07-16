@@ -62,3 +62,8 @@ if __name__ == '__main__':
     from multiprocessing import cpu_count
     # This seems to be the number of logical CPUs.
     print(f"multiprocessing module says cpu count is: {cpu_count()}")
+
+    path = Path(__file__).parent / "to_transpile2"
+    paths = [os.path.join(str(path), "**" ".{py,pyx}")]
+    print(paths)
+
