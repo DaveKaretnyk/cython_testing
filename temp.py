@@ -56,3 +56,9 @@ if __name__ == '__main__':
                     for path in Path(target_dir).rglob("*.pyx")]
     print(f"target pyx files to process from dir: {target_dir}")
     pprint(target_files)
+
+    # os.system('set')
+
+    from multiprocessing import cpu_count
+    # This seems to be the number of logical CPUs.
+    print(f"multiprocessing module says cpu count is: {cpu_count()}")
