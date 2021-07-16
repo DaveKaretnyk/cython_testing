@@ -20,7 +20,9 @@ Some specific reasons:
 import os
 import shutil
 import tempfile
+from datetime import datetime
 from pathlib import Path
+from setuptools import Extension
 from distutils.core import setup
 
 from Cython.Build.Dependencies import cythonize, extended_iglob
@@ -33,6 +35,23 @@ try:
 except ImportError:
     multiprocessing = None
     parallel_compiles = 0
+
+
+def create_extension(target):
+
+    return Extension(
+        "*",  # gets converted to the full Python dotted name, e.g. my_utils.hello
+        [target],
+        libraries=["ole32", "oleaut32", "advapi32"],
+
+        # -Zi: Leave optimization as is ('Ox' apparently) but generate full debug info.
+        # -Fd: specify the intermediate pdb file -> essential for parallel builds
+        extra_compile_args=["-Zi", f"-Fd{target.replace('.pyx', '.pdb')}"],
+
+        # /IGNORE:4197: suppress warning of function declared for export more than once
+        # -debug=full: use debug info to create pdb files
+        extra_link_args=["/IGNORE:4197", "-debug:full"],
+    )
 
 
 def parse_directives(option, name, value, parser):
@@ -79,13 +98,13 @@ def cython_compile(path_pattern, options):
 
             if os.path.isdir(path):
                 # recursively compiling a package
-                paths = [str(file_name.resolve())
-                         for file_name in Path(path).rglob("*.pyx")]
+                targets = [create_extension(str(target))
+                           for target in Path(path).rglob("*.pyx")]
             else:
-                paths = [path]  # assume it's a file(-like thing)
+                targets = [path]  # assume it's a file(-like thing)
 
             ext_modules = cythonize(
-                paths,
+                targets,
                 nthreads=options.parallel,
                 exclude_failures=options.keep_going,
                 exclude=options.excludes,
@@ -191,6 +210,9 @@ def build_args(args):
 
 
 def main(args=None):
+    start_time = datetime.now()
+    print(f"START: {start_time}")
+
     options, paths = build_args(args)
     import pprint
     pprint.pprint(options)
@@ -200,6 +222,9 @@ def main(args=None):
 
     for path in paths:
         cython_compile(path, options)
+
+    print(f"START TIME:   {start_time}")
+    print(f"FINISH TIME:  {datetime.now()}")
 
 
 if __name__ == '__main__':
