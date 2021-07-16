@@ -26,7 +26,7 @@ Function Set-DevEnv {
     None. Function does not generate any output.
 #>
     # Which script to use to setup the env? VCVARSALL.BAT is the suggestion by, e.g., Dower.
-    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
+    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     # $possibleDirs = @(
     #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools',
     #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\Tools'
@@ -72,7 +72,7 @@ Function Set-DevEnv {
     # These settings are vital else transpiled Python source uses 'semi-static linking' for the
     # C runtime -> will compile and link OK but will fail (DLL initialization error) at runtime.
     # Explanation here:
-    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
+    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     $ENV:DISTUTILS_USE_SDK = 1
     $ENV:PY_VCRUNTIME_REDIST='No thanks'
 
@@ -112,7 +112,7 @@ Function Set-DevEnvClean {
 #>
 
     # Which script to use to setup the env? VCVARSALL.BAT is the suggestion by, e.g., Dower.
-    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
+    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     # $possibleDirs = @(
     #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools',
     #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\Tools'
@@ -185,7 +185,7 @@ Function Set-DevEnvClean {
     # These settings are vital else transpiled Python source uses 'semi-static linking' for the
     # C runtime -> will compile and link OK but will fail (DLL initialization error) at runtime.
     # Explanation here:
-    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
+    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     $ENV:DISTUTILS_USE_SDK = 1
     $ENV:PY_VCRUNTIME_REDIST='No thanks'
 
