@@ -11,7 +11,8 @@ package.
 
 my_utils
 --------
-Directory to deploy transpiled code to for testing. Not under source control
+Directory to deploy transpiled code to for testing. Contents not under source
+control (apart from __int__.py).
 
 to_transpile
 ------------

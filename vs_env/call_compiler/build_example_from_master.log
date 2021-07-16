@@ -13,6 +13,7 @@ C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\1
     /TcE:\SB\autostar\AUTOSTAR_COMMON\python\cythonized\fei_common\applications\sherpa\infra\application_logger.c
     /FoE:\SB\autostar\build\temp.win-amd64-3.6\Release\SB\autostar\AUTOSTAR_COMMON\python\cythonized\fei_common\applications\sherpa\infra\application_logger.obj
     -Zi
+
 application_logger.c
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\bin\HostX64\x64\link.exe
     /nologo /INCREMENTAL:NO /LTCG /DLL /MANIFEST:EMBED,ID=2 /MANIFESTUAC:NO

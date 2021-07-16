@@ -1,22 +1,3 @@
-> python .\setup_one_example_file.py build_ext
-attach debugger to the Python process, then 'yes' to continue --> yes
-START: 2021-07-14 11:09:27.200560
-target pyx files in  dir: to_transpile2
-extension details:
-        file name: C:\github\cython_testing\to_transpile2\my_utils\hello.pyx
-        pdb name: C:\github\cython_testing\to_transpile2\my_utils\hello.pdb
-        module name: my_utils.hello
-Compiling C:\github\cython_testing\to_transpile2\my_utils\hello.pyx because it changed.
-[1/1] Cythonizing C:\github\cython_testing\to_transpile2\my_utils\hello.pyx
-running build_ext
-building 'my_utils.hello' extension
-creating build
-creating build\temp.win-amd64-3.6
-creating build\temp.win-amd64-3.6\Release
-creating build\temp.win-amd64-3.6\Release\github
-creating build\temp.win-amd64-3.6\Release\github\cython_testing
-creating build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2
-creating build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\bin\HostX64\x64\cl.exe
     /c /nologo /Ox /W3 /GL /DNDEBUG /MD
     -IC:\Fei\Python\EDM\envs\AutoStar_test\include
@@ -55,5 +36,3 @@ Creating library build\temp.win-amd64-3.6\Release\github\cython_testing\to_trans
     and object build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.cp36-win_amd64.exp
 Generating code
 Finished generating code
-START TIME:   2021-07-14 11:09:27.200560
-FINISH TIME:  2021-07-14 11:09:29.230276
