@@ -54,8 +54,8 @@ if __name__ == '__main__':
                     replace(".pyx", "").
                     replace("\\", ".")
                     for path in Path(target_dir).rglob("*.pyx")]
-    print(f"target pyx files to process from dir: {target_dir}")
-    pprint(target_files)
+    # print(f"target pyx files to process from dir: {target_dir}")
+    # pprint(target_files)
 
     # os.system('set')
 
@@ -63,7 +63,8 @@ if __name__ == '__main__':
     # This seems to be the number of logical CPUs.
     print(f"multiprocessing module says cpu count is: {cpu_count()}")
 
-    path = Path(__file__).parent / "to_transpile2"
-    paths = [os.path.join(str(path), "**" ".{py,pyx}")]
-    print(paths)
+    target_dir = Path(__file__).parent / "to_transpile"
+    file_names = [str(file_name.resolve()) for file_name in Path(target_dir).rglob("*.pyx")]
+    pprint(file_names)
+    print(len(file_names))
 

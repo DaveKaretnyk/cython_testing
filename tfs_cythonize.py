@@ -1,17 +1,21 @@
-# Re-work of Cython.Build.Cythonize.py, which is the implementation of the
-# 'cythonize' command line script published by the Cython package.
-#
-# For AutoStar purposes there is no need to be provide a very generic API,
-# e.g. certain compiler directives are not optional and must be be precisely
-# controlled.
-# More specific reasons:
-# * Parallel building of Cython extensions is not supported when using setup
-#   commands. Specifically commands that are specializations of
-#   Cython.Distutils..build_ext.new_build_ext.
-# * Building inplace (i.e. pyd next to the Python source) does not work when
-#   using 'pythons setup.py build_ext' --inplace' since this bypasses the logic
-#   for inplace building present in the Cython code.
-#
+""" Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize'
+command line script published by the Cython package.
+
+For AutoStar purposes there is no need to be provide such a generic API. In
+fact certain compiler directives must be be precisely controlled and should
+ not be changed.
+
+Some specific reasons:
+* Parallel building of Cython extensions is not supported when using setup
+  'commands'. Specifically commands that are specializations of
+  Cython.Distutils.build_ext.new_build_ext are not supported as commands.
+* Building inplace (i.e. pyd next to the Python source) does not work when
+  using 'pythons setup.py build_ext' --inplace' since this bypasses the logic
+  for inplace building present in the Cython code.
+* There is no need to support a 'wide range' of Python versions. E.g. AutoStar
+  does not need to support earlier than 3.6.
+
+"""
 
 import os
 import shutil
@@ -29,16 +33,6 @@ try:
 except ImportError:
     multiprocessing = None
     parallel_compiles = 0
-
-
-class _FakePool(object):
-    def map_async(self, func, args):
-        for _ in map(func, args):
-            pass
-
-    def close(self): pass
-    def terminate(self): pass
-    def join(self): pass
 
 
 def parse_directives(option, name, value, parser):
@@ -85,10 +79,10 @@ def cython_compile(path_pattern, options):
 
             if os.path.isdir(path):
                 # recursively compiling a package
-                paths = [os.path.join(path, "**" "*.{pyx}")]
+                paths = [str(file_name.resolve())
+                         for file_name in Path(path).rglob("*.pyx")]
             else:
-                # assume it's a file(-like thing)
-                paths = [path]
+                paths = [path]  # assume it's a file(-like thing)
 
             ext_modules = cythonize(
                 paths,
@@ -110,10 +104,7 @@ def cython_compile(path_pattern, options):
             if ext_modules and options.build:
                 if len(ext_modules) > 1 and options.parallel > 1:
                     if pool is None:
-                        try:
-                            pool = multiprocessing.Pool(options.parallel)
-                        except OSError:
-                            pool = _FakePool()
+                        pool = multiprocessing.Pool(options.parallel)
                     pool.map_async(run_distutils, [
                         (base_dir, [ext]) for ext in ext_modules])
                 else:
