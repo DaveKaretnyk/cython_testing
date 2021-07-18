@@ -223,6 +223,6 @@ docs/_build
 **/*.c
 
 # Dir to deploy transpiled code to for testing.
-/my_utils/*.pyx
-/my_utils/*.pyd
+/fei_xxx/*.pyx
+/fei_xxx/*.pyd
 !vs_env/call_compiler/*.log

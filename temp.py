@@ -68,9 +68,24 @@ if __name__ == '__main__':
     # pprint(file_names)
     # print(len(file_names))
 
-    target = "C:\\a\\b\\a\\hello.pyx"
+    target = "C:\\a\\b\\c\\hello.pyx"
     print(target)
     pdb_name = f"-Fd{target.replace('.pyx', '.pdb')}"
     print(target)
     print(pdb_name)
 
+    # Don't need to calculate module name if Extension calls is passed "*" for name.
+    dist_name = "fei_some_comp"
+    #  _dir = "C:\\work_dir\\fei_some_comp"
+    file_name = f"C:\\work_dir\\fei_some_comp\\a\\b\\c\\hello.pyx"
+    mod_file_name = file_name.replace(file_name.split(dist_name)[0], "")
+    # mod_file_name = file_name[file_name.find(dist_name):]
+    mod_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
+    # mod_name = mod_name[1:]  # get rid of leading . in name
+    # print(f"_dir:               {_dir}")
+    print(f"file_name:              {file_name}")
+    print(f"module file name:       {mod_file_name}")
+    print(f"module dotted name:     {mod_name}")
+
+    x = file_name.split(dist_name)
+    print(x)

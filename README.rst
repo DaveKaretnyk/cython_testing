@@ -9,7 +9,7 @@ cython_scripts
 Just for convenience, copies of the scripts that are installed by the Cython
 package.
 
-my_utils
+fei_xxx
 --------
 Directory to deploy transpiled code to for testing. Contents not under source
 control (apart from __int__.py).

@@ -37,10 +37,20 @@ except ImportError:
     parallel_compiles = 0
 
 
-def create_extension(target):
+def create_extension(target, package_root):
+    if package_root not in target:
+        raise ValueError(f"'{package_root}' not found in file name: '{target}'")
 
-    ext = Extension(
-        "*",  # gets converted to the full Python dotted name, e.g. my_utils.hello
+    # Strip anything before package root.
+    # E.g. "C:\\work_dir\\fei_some_comp\\a\\b\\hello.pyx" -> "fei_some_comp\\a\\b\\hello.pyx"
+    mod_file_name = target.replace(target.split(package_root)[0], "")
+
+    mod_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
+    print(f"target file:                {target}")
+    print(f"module full dotted name:    {mod_name}")
+
+    return Extension(
+        mod_name,
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
 
@@ -52,8 +62,6 @@ def create_extension(target):
         # -debug=full: use debug info to create pdb files
         extra_link_args=["/IGNORE:4197", "-debug:full"],
     )
-
-    return ext
 
 
 def parse_directives(option, name, value, parser):
@@ -100,7 +108,7 @@ def cython_compile(path_pattern, options):
 
             if os.path.isdir(path):
                 # process a directory recursively
-                targets = [create_extension(str(target))
+                targets = [create_extension(str(target), "fei_xxx")
                            for target in Path(path).rglob("*.pyx")]
             else:
                 targets = [path]  # process a file
