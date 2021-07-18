@@ -39,7 +39,7 @@ except ImportError:
 
 def create_extension(target):
 
-    return Extension(
+    ext = Extension(
         "*",  # gets converted to the full Python dotted name, e.g. my_utils.hello
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
@@ -52,6 +52,8 @@ def create_extension(target):
         # -debug=full: use debug info to create pdb files
         extra_link_args=["/IGNORE:4197", "-debug:full"],
     )
+
+    return ext
 
 
 def parse_directives(option, name, value, parser):
@@ -97,11 +99,11 @@ def cython_compile(path_pattern, options):
                 base_dir = None
 
             if os.path.isdir(path):
-                # recursively compiling a package
+                # process a directory recursively
                 targets = [create_extension(str(target))
                            for target in Path(path).rglob("*.pyx")]
             else:
-                targets = [path]  # assume it's a file(-like thing)
+                targets = [path]  # process a file
 
             ext_modules = cythonize(
                 targets,
@@ -112,13 +114,6 @@ def cython_compile(path_pattern, options):
                 force=options.force,
                 quiet=options.quiet,
                 **options.options)
-
-            for ext_mod in ext_modules:
-                ext_mod.libraries = ["ole32", "oleaut32", "advapi32"]
-                ext_mod.extra_link_args = ["/IGNORE:4197", "-debug:full"]
-                ext_mod.extra_compile_args = [
-                    "-Zi",
-                    f"-Fd{ext_mod.sources[0]}".replace(".c", ".pdb")]  # should only be 1 .c file
 
             if ext_modules and options.build:
                 if len(ext_modules) > 1 and options.parallel > 1:

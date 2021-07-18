@@ -63,8 +63,14 @@ if __name__ == '__main__':
     # This seems to be the number of logical CPUs.
     print(f"multiprocessing module says cpu count is: {cpu_count()}")
 
-    target_dir = Path(__file__).parent / "to_transpile"
-    file_names = [str(file_name.resolve()) for file_name in Path(target_dir).rglob("*.pyx")]
-    pprint(file_names)
-    print(len(file_names))
+    # target_dir = Path(__file__).parent / "to_transpile"
+    # file_names = [str(file_name.resolve()) for file_name in Path(target_dir).rglob("*.pyx")]
+    # pprint(file_names)
+    # print(len(file_names))
+
+    target = "C:\\a\\b\\a\\hello.pyx"
+    print(target)
+    pdb_name = f"-Fd{target.replace('.pyx', '.pdb')}"
+    print(target)
+    print(pdb_name)
 
