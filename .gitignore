@@ -221,3 +221,8 @@ docs/_build
 
 # Cython generated source.
 **/*.c
+
+# Dir to deploy transpiled code to for testing.
+/fei_xxx/*.pyx
+/fei_xxx/*.pyd
+!vs_env/call_compiler/*.log

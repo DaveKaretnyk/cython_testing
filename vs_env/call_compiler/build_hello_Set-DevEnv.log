@@ -1,0 +1,38 @@
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\bin\HostX64\x64\cl.exe
+    /c /nologo /Ox /W3 /GL /DNDEBUG /MD
+    -IC:\Fei\Python\EDM\envs\AutoStar_test\include
+    -IC:\Fei\Python\EDM\envs\AutoStar_test\include
+    "-IC:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\ATLMFC\include"
+    "-IC:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\include"
+    "-IC:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um"
+    "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\ucrt"
+    "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\shared"
+    "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um"
+    "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\winrt"
+    "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\cppwinrt"
+    /TcC:\github\cython_testing\to_transpile2\my_utils\hello.c
+    /Fobuild\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.obj
+    -Zi
+    -FdC:\github\cython_testing\to_transpile2\my_utils\hello.pdb
+
+hello.c
+creating C:\github\cython_testing\build\lib.win-amd64-3.6
+creating C:\github\cython_testing\build\lib.win-amd64-3.6\my_utils
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\bin\HostX64\x64\link.exe
+    /nologo /INCREMENTAL:NO /LTCG /DLL /MANIFEST:EMBED,ID=2 /MANIFESTUAC:NO
+    /LIBPATH:C:\Fei\Python\EDM\envs\AutoStar_test\libs
+    /LIBPATH:C:\Fei\Python\EDM\envs\AutoStar_test\PCbuild\amd64
+    "/LIBPATH:C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\ATLMFC\lib\x64"
+    "/LIBPATH:C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.14.26428\lib\x64"
+    "/LIBPATH:C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\lib\um\x64"
+    "/LIBPATH:C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\ucrt\x64"
+    "/LIBPATH:C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\um\x64"
+    ole32.lib oleaut32.lib advapi32.lib
+    /EXPORT:PyInit_hello build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.obj
+    /OUT:build\lib.win-amd64-3.6\my_utils\hello.cp36-win_amd64.pyd
+    /IMPLIB:build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.cp36-win_amd64.lib
+    /IGNORE:4197 -debug:full
+Creating library build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.cp36-win_amd64.lib
+    and object build\temp.win-amd64-3.6\Release\github\cython_testing\to_transpile2\my_utils\hello.cp36-win_amd64.exp
+Generating code
+Finished generating code
