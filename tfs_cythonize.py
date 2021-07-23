@@ -212,6 +212,31 @@ def build_args(args):
     return options, args
 
 
+def _delete_intermediate_pdb_files(path):
+    # Note: deletion on Windows is not synchronous. OK here since the result of deleting is not
+    # 'used immediately after the delete call'. Reliable solution in the AutoStar_Support
+    # component if needed.
+    int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
+                if not int_pdb.match("*win_amd64.pdb")]
+    print(f"tfs_cythonize: remove {len(int_pdbs)} intermediate pdbs from: {path}")
+    for int_pdb in int_pdbs:
+        int_pdb.unlink()
+        print(f"    deleted fle: {int_pdb}")
+
+
+def _copy_final_pdb_files(path):
+    int_sub_dir = r"build\lib.win-amd64-3.6"
+    int_dir = Path(path).parent / int_sub_dir
+
+    src_files = [src_file for src_file in int_dir.rglob("*.pdb")
+                 if src_file.match("*win_amd64.pdb")]
+    print(f"tfs_cythonize: copy {len(src_files)} final pdbs from intermediate dir: {int_dir}")
+    for src_file in src_files:
+        dst_file = Path(str(src_file).replace(int_sub_dir, ""))
+        shutil.copy(src_file, dst_file)
+        print(f"    dst file: {dst_file}")
+
+
 def main(args=None):
     start_time = datetime.now()
     print(f"START: {start_time}")
@@ -225,6 +250,8 @@ def main(args=None):
 
     for path in paths:
         cython_compile(path, options)
+        _delete_intermediate_pdb_files(path)
+        _copy_final_pdb_files(path)
 
     print(f"START TIME:   {start_time}")
     print(f"FINISH TIME:  {datetime.now()}")

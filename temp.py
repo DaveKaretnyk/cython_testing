@@ -89,3 +89,50 @@ if __name__ == '__main__':
 
     x = file_name.split(dist_name)
     print(x)
+
+    import pathlib
+    import shutil
+    from glob import glob
+
+    # src_file = glob(
+    #     r'C:\github\cython_testing\to_transpile2\my_utils\build\lib.win-amd64-3.6\fei_xxx\*.pdb')
+    # print(f"found: {src_file}")
+    # src_file = src_file[0]
+    #
+    # tmp_subdir = r"\build\lib.win-amd64-3.6"
+    #
+    # dst_file = src_file.replace(tmp_subdir, "")
+
+    # my_file = pathlib.Path(my_file[0])
+    # to_file = pathlib.Path(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
+    #
+    # shutil.copy(src_file, dst_file)
+
+    # some_dir = pathlib.Path(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
+    # parent_dir = some_dir.parent
+    # int_dir = some_dir.parent / "build/lib.win-amd64-3.6"
+    # print(f"some dir: {some_dir}")
+    # print(f"int dir:  {int_dir}")
+
+    # some_dir = pathlib.Path(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
+    # _files = [_file for _file in Path(some_dir).rglob("*.pdb")
+    #           if not _file.match("*win_amd64.pdb")]
+    # print("found files...")
+    # for _file in _files:
+    #     print(f"    found: {_file}")
+
+    # from tfs_cythonize import _tidy_up_pdb_files
+    # _tidy_up_pdb_files(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
+
+    from tfs_cythonize import find_package_base
+    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx'
+    base_dir, package_path = find_package_base(some_dir)
+    print(f"checking: {some_dir}")
+    print(f"    base_dir:       {base_dir}")
+    print(f"    package_path:   {package_path}")
+
+    some_dir = r'C:\github\cython_testing\to_transpile\fei_xxx'
+    base_dir, package_path = find_package_base(some_dir)
+    print(f"checking: {some_dir}")
+    print(f"    base_dir:       {base_dir}")
+    print(f"    package_path:   {package_path}")

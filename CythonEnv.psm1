@@ -101,9 +101,12 @@ Function Set-DevEnvClean {
     * Exit called if serious error that cannot be recovered from.
     * After setup list the environment variables to stdout (mainly for trouble shooting).
     * Difference compared to Set-DevEnv?
-        * Get the env vars via a temp file: ensure that vars with '=' sign are handled.
+        * Get the env vars via a temp file.
         * The vars of the current instance are cleared => the final set of vars are ONLY those
-          supplied via VCVARSALL.BAT.
+          supplied via VCVARSALL.BAT and whatever thd cmd shell creates when first instantiated.
+        * Comes via John Robbins at Wintellect:
+          https://github.com/Wintellect/WintellectPowerShell/blob/master/Code/Invoke-CmdScript.ps1
+ #>
 
     .INPUTS
     None. You cannot pipe objects to this function.
