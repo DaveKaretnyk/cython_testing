@@ -124,15 +124,22 @@ if __name__ == '__main__':
     # from tfs_cythonize import _tidy_up_pdb_files
     # _tidy_up_pdb_files(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
 
-    from tfs_cythonize import find_package_base
-    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx'
-    base_dir, package_path = find_package_base(some_dir)
+    from tfs_cythonize import find_dist_base
+    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx\\'
+    base_dir, package_path = find_dist_base(some_dir)
     print(f"checking: {some_dir}")
     print(f"    base_dir:       {base_dir}")
     print(f"    package_path:   {package_path}")
 
     some_dir = r'C:\github\cython_testing\to_transpile\fei_xxx'
-    base_dir, package_path = find_package_base(some_dir)
+    base_dir, package_path = find_dist_base(some_dir)
     print(f"checking: {some_dir}")
     print(f"    base_dir:       {base_dir}")
     print(f"    package_path:   {package_path}")
+
+    from Cython.Build.Dependencies import extended_iglob
+    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx'
+    all_paths = map(os.path.abspath, extended_iglob(some_dir))
+    for path in all_paths:
+        print(f"entry: {path}")
+        print(f"type:  {type(path)}")

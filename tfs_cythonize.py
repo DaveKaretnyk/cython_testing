@@ -25,8 +25,7 @@ from pathlib import Path
 from setuptools import Extension
 from distutils.core import setup
 
-from Cython.Build.Dependencies import cythonize, extended_iglob
-from Cython.Utils import is_package_dir
+from Cython.Build.Dependencies import cythonize
 from Cython.Compiler import Options
 
 try:
@@ -87,6 +86,7 @@ def parse_options(option, name, value, parser):
 
 
 def find_dist_base(path):
+    path = path.rstrip(os.path.sep)
     base_dir, package_path = os.path.split(path)
     while os.path.isfile(os.path.join(base_dir, '__init__.py')):
         base_dir, parent = os.path.split(base_dir)
@@ -94,41 +94,40 @@ def find_dist_base(path):
     return base_dir, package_path
 
 
-def cython_compile(path_pattern, options):
+def cython_compile(path, options):
     pool = None
-    all_paths = map(os.path.abspath, extended_iglob(path_pattern))
+    abs_path = os.path.abspath(path)
     try:
-        for path in all_paths:
-            if not options.build_inplace:
-                raise ValueError("building must be inplace")
+        if not options.build_inplace:
+            raise ValueError("building must be inplace")
 
-            base_dir, dist_root_name = find_dist_base(path)
-            if os.path.isdir(path):
-                # process a directory recursively
-                targets = [create_extension(str(target), dist_root_name)
-                           for target in Path(path).rglob("*.pyx")]
+        base_dir, dist_root_name = find_dist_base(abs_path)
+        if os.path.isdir(abs_path):
+            # process a directory recursively
+            targets = [create_extension(str(target), dist_root_name)
+                       for target in Path(abs_path).rglob("*.pyx")]
+        else:
+            targets = [abs_path]  # process a file
+
+        ext_modules = cythonize(
+            targets,
+            nthreads=options.parallel,
+            exclude_failures=options.keep_going,
+            exclude=options.excludes,
+            compiler_directives=options.directives,
+            force=options.force,
+            quiet=options.quiet,
+            **options.options)
+
+        if ext_modules and options.build:
+            if len(ext_modules) > 1 and options.parallel > 1:
+                if pool is None:
+                    pool = multiprocessing.Pool(options.parallel)
+                pool.map_async(run_distutils, [
+                    (base_dir, [ext]) for ext in ext_modules])
             else:
-                targets = [path]  # process a file
-
-            ext_modules = cythonize(
-                targets,
-                nthreads=options.parallel,
-                exclude_failures=options.keep_going,
-                exclude=options.excludes,
-                compiler_directives=options.directives,
-                force=options.force,
-                quiet=options.quiet,
-                **options.options)
-
-            if ext_modules and options.build:
-                if len(ext_modules) > 1 and options.parallel > 1:
-                    if pool is None:
-                        pool = multiprocessing.Pool(options.parallel)
-                    pool.map_async(run_distutils, [
-                        (base_dir, [ext]) for ext in ext_modules])
-                else:
-                    run_distutils((base_dir, ext_modules))
-    except:
+                run_distutils((base_dir, ext_modules))
+    except Exception:
         if pool is not None:
             pool.terminate()
         raise
