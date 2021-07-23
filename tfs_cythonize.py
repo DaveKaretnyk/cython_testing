@@ -86,7 +86,7 @@ def parse_options(option, name, value, parser):
     setattr(parser.values, dest, options)
 
 
-def find_package_base(path):
+def find_dist_base(path):
     base_dir, package_path = os.path.split(path)
     while os.path.isfile(os.path.join(base_dir, '__init__.py')):
         base_dir, parent = os.path.split(base_dir)
@@ -99,16 +99,13 @@ def cython_compile(path_pattern, options):
     all_paths = map(os.path.abspath, extended_iglob(path_pattern))
     try:
         for path in all_paths:
-            if options.build_inplace:
-                base_dir = path
-                while not os.path.isdir(base_dir) or is_package_dir(base_dir):
-                    base_dir = os.path.dirname(base_dir)
-            else:
-                base_dir = None
+            if not options.build_inplace:
+                raise ValueError("building must be inplace")
 
+            base_dir, dist_root_name = find_dist_base(path)
             if os.path.isdir(path):
                 # process a directory recursively
-                targets = [create_extension(str(target), "fei_xxx")
+                targets = [create_extension(str(target), dist_root_name)
                            for target in Path(path).rglob("*.pyx")]
             else:
                 targets = [path]  # process a file
