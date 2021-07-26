@@ -1,14 +1,24 @@
-""" Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize'
+""" Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize.exe'
 command line script published by the Cython package.
 
 For AutoStar purposes there is no need to be provide such a generic API. In
 fact certain compiler directives must be be precisely controlled and should
- not be changed.
+not be changed.
 
-Some specific reasons:
-* Parallel building of Cython extensions is not supported when using setup
-  'commands'. Specifically commands that are specializations of
-  Cython.Distutils.build_ext.new_build_ext are not supported as commands.
+Background:
+Parallel building of Cython extensions is not supported when using setup
+'commands'. Specifically commands that are specializations of
+Cython.Distutils.build_ext.new_build_ext are not supported as commands. Hence
+a modified version of Cython.Build.Cythonize.py is used instead.
+
+Additionally the code currently executed in the context of an AutoStar
+'setup.py(...)' call is overly complicated and needs simplification. E.g.
+support is in there for handling: source dists; Cython test dists; Cython
+product dists from test dists; pdb files needed for post-mortem debugging;
+and incremental building. And lastly, the use of a standard setup.py longer
+term is not useful for Anaconda distribution management.
+
+Key specific changes to Cython.Build.Cythonize.py:
 * Building inplace (i.e. pyd next to the Python source) does not work when
   using 'pythons setup.py build_ext' --inplace' since this bypasses the logic
   for inplace building present in the Cython code.
@@ -16,24 +26,24 @@ Some specific reasons:
   does not need to support earlier than 3.6.
 
 """
-
 import os
 import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
+import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
 
 from Cython.Build.Dependencies import cythonize
 from Cython.Compiler import Options
 
-try:
-    import multiprocessing
-    parallel_compiles = int(multiprocessing.cpu_count() * 1.5)
-except ImportError:
-    multiprocessing = None
-    parallel_compiles = 0
+
+mod_name = str(Path(__file__).stem)
+
+# The CPU count is 'logical CPUs', e.g. 4 often means 2 cores each with hyper-threading.
+parallel_compiles = multiprocessing.cpu_count()
+print(f"{mod_name}: available (logical) cpus: {parallel_compiles}")
 
 
 def create_extension(target, package_root):
@@ -85,13 +95,24 @@ def parse_options(option, name, value, parser):
     setattr(parser.values, dest, options)
 
 
-def find_dist_base(path):
+def find_dist_base(path: str) -> (str, str):
+    """ For the path supplied return the base directory and the root name of
+    the package / dist as a tuple.
+
+    The package/dist root name is the top level directory containing a
+    __init__.py file and the base directory is the parent directory of that
+    dir.
+
+    E.g. For 'C:\\github\\AUTOSTAR\\AutoStar_Common\\python\\fei_common', the
+    base directory is r'C:\\github\\AUTOSTAR\\AutoStar_Common\\python' and the
+    package / distribution root name is 'fei_common'.
+    """
     path = path.rstrip(os.path.sep)
-    base_dir, package_path = os.path.split(path)
+    base_dir, package_root = os.path.split(path)
     while os.path.isfile(os.path.join(base_dir, '__init__.py')):
         base_dir, parent = os.path.split(base_dir)
-        package_path = '%s/%s' % (parent, package_path)
-    return base_dir, package_path
+        package_root = '%s/%s' % (parent, package_root)
+    return base_dir, package_root
 
 
 def cython_compile(path, options):
@@ -214,7 +235,7 @@ def _delete_intermediate_pdb_files(path):
     # component if needed.
     int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
                 if not int_pdb.match("*win_amd64.pdb")]
-    print(f"tfs_cythonize: remove {len(int_pdbs)} intermediate pdbs from: {path}")
+    print(f"{mod_name}: remove {len(int_pdbs)} intermediate pdbs from: {path}")
     for int_pdb in int_pdbs:
         int_pdb.unlink()
         print(f"    deleted fle: {int_pdb}")
@@ -226,7 +247,7 @@ def _copy_final_pdb_files(path):
 
     src_files = [src_file for src_file in int_dir.rglob("*.pdb")
                  if src_file.match("*win_amd64.pdb")]
-    print(f"tfs_cythonize: copy {len(src_files)} final pdbs from intermediate dir: {int_dir}")
+    print(f"{mod_name}: copy {len(src_files)} final pdbs from intermediate dir: {int_dir}")
     for src_file in src_files:
         dst_file = Path(str(src_file).replace(int_sub_dir, ""))
         shutil.copy(src_file, dst_file)
@@ -249,8 +270,8 @@ def main(args=None):
         _delete_intermediate_pdb_files(path)
         _copy_final_pdb_files(path)
 
-    print(f"START TIME:   {start_time}")
-    print(f"FINISH TIME:  {datetime.now()}")
+    print(f"{mod_name} START TIME:   {start_time}")
+    print(f"{mod_name} FINISH TIME:  {datetime.now()}")
 
 
 if __name__ == '__main__':

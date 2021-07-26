@@ -143,3 +143,11 @@ if __name__ == '__main__':
     for path in all_paths:
         print(f"entry: {path}")
         print(f"type:  {type(path)}")
+
+    import os
+    import multiprocessing
+    print(f"cpu count from multiprocessing packages: {multiprocessing.cpu_count()}")
+    print(f"cpu count from os:                       {os.cpu_count()}")
+
+    this_file_name = Path(__file__).stem
+    print(f"{this_file_name}")
