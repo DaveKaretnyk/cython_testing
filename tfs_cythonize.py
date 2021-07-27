@@ -56,9 +56,6 @@ from Cython.Compiler import Options as CythonOptions
 
 mod_name = str(Path(__file__).stem)
 
-# The CPU count is 'logical CPUs', e.g. 4 often means 2 cores each with hyper-threading.
-parallel_compiles = multiprocessing.cpu_count()
-
 
 def create_extension(target, package_root):
     if package_root not in target:
@@ -196,9 +193,8 @@ def construct_options(args):
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
                       help='generate annotated HTML page for C source files')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
-                      type=int, default=parallel_compiles,
-                      help=('run builds in N parallel jobs (default: %d)' %
-                            parallel_compiles or 1))
+                      type=int, default=1,
+                      help='run builds in N parallel jobs (default is 1)')
     parser.add_option('-f', '--force', dest='force', action='store_true',
                       help='force recompilation')
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
@@ -256,7 +252,7 @@ def main(args=None):
 
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
-    print(f"    available (logical) cpus: {parallel_compiles}")
+    print(f"    available (logical) cpus: {multiprocessing.cpu_count()}")
 
     print(f"{mod_name}: source dir: {path}")
     print(f"{mod_name}: options:")
