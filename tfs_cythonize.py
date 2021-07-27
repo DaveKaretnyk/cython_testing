@@ -34,8 +34,8 @@ term is not useful for Anaconda distribution management.
 
 Key specific changes to Cython.Build.Cythonize.py:
 * Building inplace (i.e. pyd next to the Python source) does not work when
-  using 'pythons setup.py build_ext' --inplace' since this bypasses the logic
-  for inplace building present in the Cython code.
+  using 'pythons setup.py build_ext --inplace' since this bypasses the logic
+  in the Cython code.
 * There is no need to support a 'wide range' of Python versions. E.g. AutoStar
   does not need to support earlier than 3.6.
 
@@ -51,7 +51,7 @@ from setuptools import Extension
 from distutils.core import setup
 
 from Cython.Build.Dependencies import cythonize
-from Cython.Compiler import Options
+from Cython.Compiler import Options as CythonOptions
 
 
 mod_name = str(Path(__file__).stem)
@@ -90,8 +90,8 @@ def create_extension(target, package_root):
 def parse_directives(option, name, value, parser):
     dest = option.dest
     old_directives = dict(getattr(parser.values, dest,
-                                  Options.get_directive_defaults()))
-    directives = Options.parse_directive_list(
+                                  CythonOptions.get_directive_defaults()))
+    directives = CythonOptions.parse_directive_list(
         value, relaxed_bool=True, current_settings=old_directives)
     setattr(parser.values, dest, directives)
 
@@ -127,9 +127,6 @@ def find_dist_base(path: PurePath) -> (PurePath, str):
 def cython_compile(path, options):
     pool = None
     try:
-        if not options.build_inplace:
-            raise ValueError("building must be inplace")
-
         base_dir, dist_root_name = find_dist_base(path)
         print(f"{mod_name}: creating setuptools.Extension instances:")
         targets = [create_extension(str(target), dist_root_name)
@@ -195,7 +192,7 @@ def build_args(args):
     parser.add_option('-s', '--option', metavar='NAME=VALUE', dest='options',
                       type=str, action='callback', callback=parse_options, default={},
                       help='set a cythonize option')
-    parser.add_option('-3', dest='python3_mode', action='store_true',
+    parser.add_option('-3', '--python3', dest='python3_mode', action='store_true',
                       help='use Python 3 syntax mode by default')
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
                       help='generate annotated HTML page for source files')
@@ -206,8 +203,6 @@ def build_args(args):
 
     parser.add_option('-b', '--build', dest='build', action='store_true',
                       help='build extension modules using distutils')
-    parser.add_option('-i', '--inplace', dest='build_inplace', action='store_true',
-                      help='build extension modules in place using distutils (implies -b)')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
                       type=int, default=parallel_compiles,
                       help=('run builds in N parallel jobs (default: %d)' %
@@ -228,10 +223,6 @@ def build_args(args):
     path = Path(args[0]).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
-    if options.build_inplace:
-        options.build = True
-    if multiprocessing is None:
-        options.parallel = 0
     if options.python3_mode:
         options.options['language_level'] = 3
     return path, options
@@ -274,7 +265,7 @@ def main(args=None):
     pprint(options.__dict__, indent=4)
 
     if options.annotate:  # can only be annotate or emit_linenums, not both
-        Options.annotate = True
+        CythonOptions.annotate = True
 
     cython_compile(path, options)
     _delete_intermediate_pdb_files(path)
