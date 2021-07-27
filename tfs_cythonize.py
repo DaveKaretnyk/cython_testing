@@ -184,12 +184,6 @@ def construct_options(args):
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] source_dir [options]')
 
-    parser.add_option('-X', '--directive', metavar='NAME=VALUE,...', dest='directives',
-                      type=str, action='callback', callback=parse_directives, default={},
-                      help='set a compiler directive')
-    parser.add_option('-s', '--option', metavar='NAME=VALUE', dest='options',
-                      type=str, action='callback', callback=parse_options, default={},
-                      help='set a cythonize option')
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
                       help='generate annotated HTML page for C source files')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
@@ -198,7 +192,7 @@ def construct_options(args):
     parser.add_option('-f', '--force', dest='force', action='store_true',
                       help='force recompilation')
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
-                      help='be less verbose during compilation')
+                      help='less verbose during Cython compile (no effect on C compile)')
 
     options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
     if not args or len(args) != 1:
@@ -208,7 +202,8 @@ def construct_options(args):
         parser.error(f"not a valid source dir: {path}")
 
     # Some options are just set, i.e. no command line support given.
-    options.options['language_level'] = 3  # hard coded: only want Python 3
+    options.directives = {'language_level': 3}
+    options.options = {}
     options.build = True
     options.lenient = None
     options.keep_going = None
