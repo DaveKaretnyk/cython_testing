@@ -84,28 +84,6 @@ def create_extension(target, package_root):
     )
 
 
-def parse_directives(option, name, value, parser):
-    dest = option.dest
-    old_directives = dict(getattr(parser.values, dest,
-                                  CythonOptions.get_directive_defaults()))
-    directives = CythonOptions.parse_directive_list(
-        value, relaxed_bool=True, current_settings=old_directives)
-    setattr(parser.values, dest, directives)
-
-
-def parse_options(option, name, value, parser):
-    dest = option.dest
-    options = dict(getattr(parser.values, dest, {}))
-    for opt in value.split(','):
-        if '=' in opt:
-            n, v = opt.split('=', 1)
-            v = v.lower() not in ('false', 'f', '0', 'no')
-        else:
-            n, v = opt, True
-        options[n] = v
-    setattr(parser.values, dest, options)
-
-
 def find_dist_base(path: PurePath) -> (PurePath, str):
     """ For the path supplied return the base directory and the root name of
     the package / dist as a tuple.
