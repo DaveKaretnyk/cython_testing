@@ -137,6 +137,7 @@ def cython_compile(path, options):
             nthreads=options.parallel,
             exclude_failures=options.keep_going,
             exclude=options.excludes,
+            emit_linenums=options.linenums,
             compiler_directives=options.directives,
             force=options.force,
             quiet=options.quiet,
@@ -192,10 +193,9 @@ def build_args(args):
     parser.add_option('-s', '--option', metavar='NAME=VALUE', dest='options',
                       type=str, action='callback', callback=parse_options, default={},
                       help='set a cythonize option')
-    parser.add_option('-3', '--python3', dest='python3_mode', action='store_true',
-                      help='use Python 3 syntax mode by default')
+
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
-                      help='generate annotated HTML page for source files')
+                      help='generate annotated HTML page for C source files')
 
     parser.add_option('-x', '--exclude', metavar='PATTERN', dest='excludes',
                       action='append', default=[],
@@ -223,8 +223,14 @@ def build_args(args):
     path = Path(args[0]).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
-    if options.python3_mode:
-        options.options['language_level'] = 3
+
+    options.options['language_level'] = 3  # hard coded: only want Python 3
+    options.linenums = True
+    if options.annotate:
+        print(f"{mod_name}: WARNING:linenums disabled because annotate option selected!")
+        print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
+        options.linenums = False
+
     return path, options
 
 
