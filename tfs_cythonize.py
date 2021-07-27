@@ -30,7 +30,7 @@ import os
 import shutil
 import tempfile
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePath
 import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
@@ -43,7 +43,6 @@ mod_name = str(Path(__file__).stem)
 
 # The CPU count is 'logical CPUs', e.g. 4 often means 2 cores each with hyper-threading.
 parallel_compiles = multiprocessing.cpu_count()
-print(f"{mod_name}: available (logical) cpus: {parallel_compiles}")
 
 
 def create_extension(target, package_root):
@@ -95,24 +94,19 @@ def parse_options(option, name, value, parser):
     setattr(parser.values, dest, options)
 
 
-def find_dist_base(path: str) -> (str, str):
+def find_dist_base(path: PurePath) -> (PurePath, str):
     """ For the path supplied return the base directory and the root name of
     the package / dist as a tuple.
-
-    The package/dist root name is the top level directory containing a
-    __init__.py file and the base directory is the parent directory of that
-    dir.
 
     E.g. For 'C:\\github\\AUTOSTAR\\AutoStar_Common\\python\\fei_common', the
     base directory is r'C:\\github\\AUTOSTAR\\AutoStar_Common\\python' and the
     package / distribution root name is 'fei_common'.
+
+    This is different from the equivalent function in the Cython code base
+    which computes the root name based on the location of the top most
+    __init__.py file. For most AutoStar components that will not work.
     """
-    path = path.rstrip(os.path.sep)
-    base_dir, package_root = os.path.split(path)
-    while os.path.isfile(os.path.join(base_dir, '__init__.py')):
-        base_dir, parent = os.path.split(base_dir)
-        package_root = '%s/%s' % (parent, package_root)
-    return base_dir, package_root
+    return path.parent, path.stem
 
 
 def cython_compile(path, options):
@@ -182,7 +176,7 @@ def run_distutils(args):
 
 def build_args(args):
     from optparse import OptionParser
-    parser = OptionParser(usage='%prog [options] [sources and packages]+')
+    parser = OptionParser(usage='%prog [options] source_dir')
 
     parser.add_option('-X', '--directive', metavar='NAME=VALUE,...', dest='directives',
                       type=str, action='callback', callback=parse_directives, default={},
@@ -217,9 +211,9 @@ def build_args(args):
     parser.add_option('-k', '--keep-going', dest='keep_going', action='store_true',
                       help='compile as much as possible, ignore compilation failures')
 
-    options, args = parser.parse_args(args)
+    options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
     if not args:
-        parser.error("no source files provided")
+        parser.error("no source dir provided")
     if options.build_inplace:
         options.build = True
     if multiprocessing is None:
@@ -256,7 +250,8 @@ def _copy_final_pdb_files(path):
 
 def main(args=None):
     start_time = datetime.now()
-    print(f"START: {start_time}")
+    print(f"{mod_name} START TIME:   {start_time}")
+    print(f"    available (logical) cpus: {parallel_compiles}")
 
     options, paths = build_args(args)
     import pprint
