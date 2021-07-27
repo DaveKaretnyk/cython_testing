@@ -183,7 +183,7 @@ def run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def build_args(args):
+def construct_options(args):
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] source_dir [options]')
 
@@ -193,16 +193,8 @@ def build_args(args):
     parser.add_option('-s', '--option', metavar='NAME=VALUE', dest='options',
                       type=str, action='callback', callback=parse_options, default={},
                       help='set a cythonize option')
-
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
                       help='generate annotated HTML page for C source files')
-
-    parser.add_option('-x', '--exclude', metavar='PATTERN', dest='excludes',
-                      action='append', default=[],
-                      help='exclude certain file patterns from the compilation')
-
-    parser.add_option('-b', '--build', dest='build', action='store_true',
-                      help='build extension modules using distutils')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
                       type=int, default=parallel_compiles,
                       help=('run builds in N parallel jobs (default: %d)' %
@@ -212,11 +204,6 @@ def build_args(args):
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
                       help='be less verbose during compilation')
 
-    parser.add_option('--lenient', dest='lenient', action='store_true',
-                      help='increase Python compatibility by ignoring some compile time errors')
-    parser.add_option('-k', '--keep-going', dest='keep_going', action='store_true',
-                      help='compile as much as possible, ignore compilation failures')
-
     options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
     if not args or len(args) != 1:
         parser.error("one source dir should be specified")
@@ -224,8 +211,13 @@ def build_args(args):
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
 
+    # Some options are just set, i.e. no command line support given.
     options.options['language_level'] = 3  # hard coded: only want Python 3
+    options.build = True
+    options.lenient = None
+    options.keep_going = None
     options.linenums = True
+    options.excludes = []
     if options.annotate:
         print(f"{mod_name}: WARNING:linenums disabled because annotate option selected!")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
@@ -260,7 +252,7 @@ def _copy_final_pdb_files(path):
 
 
 def main(args=None):
-    path, options = build_args(args)
+    path, options = construct_options(args)
 
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
