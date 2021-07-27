@@ -112,7 +112,7 @@ def cython_compile(path, options):
             nthreads=options.parallel,
             exclude_failures=options.keep_going,
             exclude=options.excludes,
-            emit_linenums=options.linenums,
+            emit_linenums=options.emit_linenums,
             compiler_directives=options.directives,
             force=options.force,
             quiet=options.quiet,
@@ -185,12 +185,13 @@ def construct_options(args):
     options.build = True
     options.lenient = None
     options.keep_going = None
-    options.linenums = True
+    options.emit_linenums = True
     options.excludes = []
     if options.annotate:
-        print(f"{mod_name}: WARNING:linenums disabled because annotate option selected!")
+        CythonOptions.annotate = True
+        print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected!")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
-        options.linenums = False
+        options.emit_linenums = False
 
     return path, options
 
@@ -230,9 +231,6 @@ def main(args=None):
     print(f"{mod_name}: source dir: {path}")
     print(f"{mod_name}: options:")
     pprint(options.__dict__, indent=4)
-
-    if options.annotate:  # can only be annotate or emit_linenums, not both
-        CythonOptions.annotate = True
 
     cython_compile(path, options)
     _delete_intermediate_pdb_files(path)
