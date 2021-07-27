@@ -1,6 +1,20 @@
 """ Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize.exe'
 command line script published by the Cython package.
 
+Summary:
+Transpiles (cythonizes) all .pyx files in the directory given as input.
+'tfs_cythonize --help' to show options.
+
+Prerequisites:
+* Visual Studio 2017 must be installed on the system.
+* The required environment variables for running the Visual Studio compiler
+  from the command line must be defined. I.e. VCVARSALL.BAT should have been
+  run.
+* Also the following key env. vars must be set (these are not set by
+  VCVARSALL.BAT):
+    $ENV:DISTUTILS_USE_SDK = 1
+    $ENV:PY_VCRUNTIME_REDIST='No thanks'
+
 For AutoStar purposes there is no need to be provide such a generic API. In
 fact certain compiler directives must be be precisely controlled and should
 not be changed.
@@ -30,6 +44,7 @@ import os
 import shutil
 import tempfile
 from datetime import datetime
+from pprint import pprint
 from pathlib import Path, PurePath
 import multiprocessing
 from setuptools import Extension
@@ -53,12 +68,12 @@ def create_extension(target, package_root):
     # E.g. "C:\\work_dir\\fei_some_comp\\a\\b\\hello.pyx" -> "fei_some_comp\\a\\b\\hello.pyx"
     mod_file_name = target.replace(target.split(package_root)[0], "")
 
-    mod_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
-    print(f"target file:                {target}")
-    print(f"module full dotted name:    {mod_name}")
+    module_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
+    print(f"    target file:                {target}")
+    print(f"    module full dotted name:    {module_name}")
 
     return Extension(
-        mod_name,
+        module_name,
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
 
@@ -111,18 +126,14 @@ def find_dist_base(path: PurePath) -> (PurePath, str):
 
 def cython_compile(path, options):
     pool = None
-    abs_path = os.path.abspath(path)
     try:
         if not options.build_inplace:
             raise ValueError("building must be inplace")
 
-        base_dir, dist_root_name = find_dist_base(abs_path)
-        if os.path.isdir(abs_path):
-            # process a directory recursively
-            targets = [create_extension(str(target), dist_root_name)
-                       for target in Path(abs_path).rglob("*.pyx")]
-        else:
-            targets = [abs_path]  # process a file
+        base_dir, dist_root_name = find_dist_base(path)
+        print(f"{mod_name}: creating setuptools.Extension instances:")
+        targets = [create_extension(str(target), dist_root_name)
+                   for target in path.rglob("*.pyx")]
 
         ext_modules = cythonize(
             targets,
@@ -139,9 +150,9 @@ def cython_compile(path, options):
                 if pool is None:
                     pool = multiprocessing.Pool(options.parallel)
                 pool.map_async(run_distutils, [
-                    (base_dir, [ext]) for ext in ext_modules])
+                    (str(base_dir), [ext]) for ext in ext_modules])
             else:
-                run_distutils((base_dir, ext_modules))
+                run_distutils((str(base_dir), ext_modules))
     except Exception:
         if pool is not None:
             pool.terminate()
@@ -176,7 +187,7 @@ def run_distutils(args):
 
 def build_args(args):
     from optparse import OptionParser
-    parser = OptionParser(usage='%prog [options] source_dir')
+    parser = OptionParser(usage='%prog [options] source_dir [options]')
 
     parser.add_option('-X', '--directive', metavar='NAME=VALUE,...', dest='directives',
                       type=str, action='callback', callback=parse_directives, default={},
@@ -212,15 +223,18 @@ def build_args(args):
                       help='compile as much as possible, ignore compilation failures')
 
     options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
-    if not args:
-        parser.error("no source dir provided")
+    if not args or len(args) != 1:
+        parser.error("one source dir should be specified")
+    path = Path(args[0]).resolve()
+    if not path.is_dir():
+        parser.error(f"not a valid source dir: {path}")
     if options.build_inplace:
         options.build = True
     if multiprocessing is None:
         options.parallel = 0
     if options.python3_mode:
         options.options['language_level'] = 3
-    return options, args
+    return path, options
 
 
 def _delete_intermediate_pdb_files(path):
@@ -249,21 +263,22 @@ def _copy_final_pdb_files(path):
 
 
 def main(args=None):
+    path, options = build_args(args)
+
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
     print(f"    available (logical) cpus: {parallel_compiles}")
 
-    options, paths = build_args(args)
-    import pprint
-    pprint.pprint(options)
+    print(f"{mod_name}: source dir: {path}")
+    print(f"{mod_name}: options:")
+    pprint(options.__dict__, indent=4)
 
     if options.annotate:  # can only be annotate or emit_linenums, not both
         Options.annotate = True
 
-    for path in paths:
-        cython_compile(path, options)
-        _delete_intermediate_pdb_files(path)
-        _copy_final_pdb_files(path)
+    cython_compile(path, options)
+    _delete_intermediate_pdb_files(path)
+    _copy_final_pdb_files(path)
 
     print(f"{mod_name} START TIME:   {start_time}")
     print(f"{mod_name} FINISH TIME:  {datetime.now()}")
