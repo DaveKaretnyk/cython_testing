@@ -3,7 +3,13 @@ command line script published by the Cython package.
 
 Summary:
 Transpiles (cythonizes) all .pyx files in the directory given as input.
-'tfs_cythonize --help' to show options.
+'tfs_cythonize --help' to show options:
+    * --annotate: generate annotated HTML page for C source files, DO NOT USE
+                  in production since it disables mapping back to .pyx files
+                  from generated symbols (pdbs)
+    * --parallel: run C compilation in parallel (int)
+    * --force: rebuild even if not soure file changes
+    * --quiet: less verbose during Cython compile (no effect on C compile)
 
 Prerequisites:
 * Visual Studio 2017 must be installed on the system.
@@ -113,6 +119,7 @@ def cython_compile(path, options):
             exclude_failures=options.keep_going,
             exclude=options.excludes,
             emit_linenums=options.emit_linenums,
+            annotate=options.annotate,
             compiler_directives=options.directives,
             force=options.force,
             quiet=options.quiet,
@@ -163,10 +170,10 @@ def construct_options(args):
     parser = OptionParser(usage='%prog [options] source_dir [options]')
 
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
-                      help='generate annotated HTML page for C source files')
+                      help='generate annotated HTML for C source files')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
-                      type=int, default=1,
-                      help='run builds in N parallel jobs (default is 1)')
+                      type=int, default=0,
+                      help='run builds in N parallel jobs (default is 0)')
     parser.add_option('-f', '--force', dest='force', action='store_true',
                       help='force recompilation')
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
