@@ -47,6 +47,7 @@ Key specific changes to Cython.Build.Cythonize.py:
 
 """
 import os
+import sys
 import shutil
 import tempfile
 from datetime import datetime
@@ -105,13 +106,14 @@ def find_dist_base(path: PurePath) -> (PurePath, str):
     return path.parent, path.stem
 
 
-def cython_compile(path, options):
+def cython_compile(path, options) -> int:
     pool = None
     try:
         base_dir, dist_root_name = find_dist_base(path)
         print(f"{mod_name}: creating setuptools.Extension instances:")
         targets = [create_extension(str(target), dist_root_name)
                    for target in path.rglob("*.pyx")]
+        num_files_compiled = len(targets)
 
         ext_modules = cythonize(
             targets,
@@ -141,6 +143,8 @@ def cython_compile(path, options):
         if pool is not None:
             pool.close()
             pool.join()
+
+    return num_files_compiled
 
 
 def run_distutils(args):
@@ -228,6 +232,25 @@ def _copy_final_pdb_files(path):
         print(f"    dst file: {dst_file}")
 
 
+def _check_results(path, num_files_compiled) -> int:
+    """ Check that the number of pyd & pdb files generated equals the number
+    of source files that were compiled.
+    """
+    num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
+    num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
+    print(f"{mod_name}: check compilation results:")
+    print(f"    source files: {num_files_compiled}")
+    print(f"    pdb files:    {num_pdbs}")
+    print(f"    pyd files:    {num_pyds}")
+
+    exit_code = 5
+    if num_files_compiled == num_pdbs == num_pyds:
+        exit_code = 0
+    else:
+        print(f"{mod_name}: ERROR: wrong number of pyd or pdb files generated")
+    return exit_code
+
+
 def main(args=None):
     path, options = construct_options(args)
 
@@ -239,12 +262,15 @@ def main(args=None):
     print(f"{mod_name}: options:")
     pprint(options.__dict__, indent=4)
 
-    cython_compile(path, options)
+    num_files_compiled = cython_compile(path, options)
     _delete_intermediate_pdb_files(path)
     _copy_final_pdb_files(path)
+    success = _check_results(path, num_files_compiled)
 
     print(f"{mod_name} START TIME:   {start_time}")
     print(f"{mod_name} FINISH TIME:  {datetime.now()}")
+
+    sys.exit(success)
 
 
 if __name__ == '__main__':
