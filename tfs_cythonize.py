@@ -1,40 +1,67 @@
-""" Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize'
+""" Re-work of Cython.Build.Cythonize.py, which implements the 'cythonize.exe'
 command line script published by the Cython package.
+
+Summary:
+Transpiles (cythonizes) all .pyx files in the directory given as input.
+'tfs_cythonize --help' to show options:
+    * --annotate: generate annotated HTML page for C source files, DO NOT USE
+                  in production since it disables mapping back to .pyx files
+                  from generated symbols (pdbs)
+    * --parallel: run C compilation in parallel (int)
+    * --force: rebuild even if not soure file changes
+    * --quiet: less verbose during Cython compile (no effect on C compile)
+
+Prerequisites:
+* Visual Studio 2017 must be installed on the system.
+* The required environment variables for running the Visual Studio compiler
+  from the command line must be defined. I.e. VCVARSALL.BAT should have been
+  run.
+* Also the following key env. vars must be set (these are not set by
+  VCVARSALL.BAT):
+    $ENV:DISTUTILS_USE_SDK = 1
+    $ENV:PY_VCRUNTIME_REDIST='No thanks'
 
 For AutoStar purposes there is no need to be provide such a generic API. In
 fact certain compiler directives must be be precisely controlled and should
- not be changed.
+not be changed.
 
-Some specific reasons:
-* Parallel building of Cython extensions is not supported when using setup
-  'commands'. Specifically commands that are specializations of
-  Cython.Distutils.build_ext.new_build_ext are not supported as commands.
+Background:
+Parallel building of Cython extensions is not supported when using setup
+'commands'. Specifically commands that are specializations of
+Cython.Distutils.build_ext.new_build_ext are not supported as commands. Hence
+a modified version of Cython.Build.Cythonize.py is used instead.
+
+Additionally the code currently executed in the context of an AutoStar
+'setup.py(...)' call is overly complicated and needs simplification. E.g.
+support is in there for handling: source dists; Cython test dists; Cython
+product dists from test dists; pdb files needed for post-mortem debugging;
+and incremental building. And lastly, the use of a standard setup.py longer
+term is not useful for Anaconda distribution management.
+
+Key specific changes to Cython.Build.Cythonize.py:
 * Building inplace (i.e. pyd next to the Python source) does not work when
-  using 'pythons setup.py build_ext' --inplace' since this bypasses the logic
-  for inplace building present in the Cython code.
+  using 'pythons setup.py build_ext --inplace' since this bypasses the logic
+  in the Cython code.
 * There is no need to support a 'wide range' of Python versions. E.g. AutoStar
   does not need to support earlier than 3.6.
 
 """
-
 import os
+import sys
 import shutil
 import tempfile
 from datetime import datetime
-from pathlib import Path
+from pprint import pprint
+from pathlib import Path, PurePath
+import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
 
-from Cython.Build.Dependencies import cythonize, extended_iglob
-from Cython.Utils import is_package_dir
-from Cython.Compiler import Options
+from Cython.Build.Dependencies import cythonize
+from Cython.Compiler import Options as CythonOptions
 
-try:
-    import multiprocessing
-    parallel_compiles = int(multiprocessing.cpu_count() * 1.5)
-except ImportError:
-    multiprocessing = None
-    parallel_compiles = 0
+
+mod_name = str(Path(__file__).stem)
 
 
 def create_extension(target, package_root):
@@ -45,12 +72,12 @@ def create_extension(target, package_root):
     # E.g. "C:\\work_dir\\fei_some_comp\\a\\b\\hello.pyx" -> "fei_some_comp\\a\\b\\hello.pyx"
     mod_file_name = target.replace(target.split(package_root)[0], "")
 
-    mod_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
-    print(f"target file:                {target}")
-    print(f"module full dotted name:    {mod_name}")
+    module_name = mod_file_name.replace(".pyx", "").replace("\\", ".")
+    print(f"    target file:                {target}")
+    print(f"    module full dotted name:    {module_name}")
 
     return Extension(
-        mod_name,
+        module_name,
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
 
@@ -64,74 +91,51 @@ def create_extension(target, package_root):
     )
 
 
-def parse_directives(option, name, value, parser):
-    dest = option.dest
-    old_directives = dict(getattr(parser.values, dest,
-                                  Options.get_directive_defaults()))
-    directives = Options.parse_directive_list(
-        value, relaxed_bool=True, current_settings=old_directives)
-    setattr(parser.values, dest, directives)
+def find_dist_base(path: PurePath) -> (PurePath, str):
+    """ For the path supplied return the base directory and the root name of
+    the package / dist as a tuple.
+
+    E.g. For 'C:\\github\\AUTOSTAR\\AutoStar_Common\\python\\fei_common', the
+    base directory is r'C:\\github\\AUTOSTAR\\AutoStar_Common\\python' and the
+    package / distribution root name is 'fei_common'.
+
+    This is different from the equivalent function in the Cython code base
+    which computes the root name based on the location of the top most
+    __init__.py file. For most AutoStar components that will not work.
+    """
+    return path.parent, path.stem
 
 
-def parse_options(option, name, value, parser):
-    dest = option.dest
-    options = dict(getattr(parser.values, dest, {}))
-    for opt in value.split(','):
-        if '=' in opt:
-            n, v = opt.split('=', 1)
-            v = v.lower() not in ('false', 'f', '0', 'no')
-        else:
-            n, v = opt, True
-        options[n] = v
-    setattr(parser.values, dest, options)
-
-
-def find_package_base(path):
-    base_dir, package_path = os.path.split(path)
-    while os.path.isfile(os.path.join(base_dir, '__init__.py')):
-        base_dir, parent = os.path.split(base_dir)
-        package_path = '%s/%s' % (parent, package_path)
-    return base_dir, package_path
-
-
-def cython_compile(path_pattern, options):
+def cython_compile(path, options) -> int:
     pool = None
-    all_paths = map(os.path.abspath, extended_iglob(path_pattern))
     try:
-        for path in all_paths:
-            if options.build_inplace:
-                base_dir = path
-                while not os.path.isdir(base_dir) or is_package_dir(base_dir):
-                    base_dir = os.path.dirname(base_dir)
+        base_dir, dist_root_name = find_dist_base(path)
+        print(f"{mod_name}: creating setuptools.Extension instances:")
+        targets = [create_extension(str(target), dist_root_name)
+                   for target in path.rglob("*.pyx")]
+        num_files_compiled = len(targets)
+
+        ext_modules = cythonize(
+            targets,
+            nthreads=options.parallel,
+            exclude_failures=options.keep_going,
+            exclude=options.excludes,
+            emit_linenums=options.emit_linenums,
+            annotate=options.annotate,
+            compiler_directives=options.directives,
+            force=options.force,
+            quiet=options.quiet,
+            **options.options)
+
+        if ext_modules and options.build:
+            if len(ext_modules) > 1 and options.parallel > 1:
+                if pool is None:
+                    pool = multiprocessing.Pool(options.parallel)
+                pool.map_async(run_distutils, [
+                    (str(base_dir), [ext]) for ext in ext_modules])
             else:
-                base_dir = None
-
-            if os.path.isdir(path):
-                # process a directory recursively
-                targets = [create_extension(str(target), "fei_xxx")
-                           for target in Path(path).rglob("*.pyx")]
-            else:
-                targets = [path]  # process a file
-
-            ext_modules = cythonize(
-                targets,
-                nthreads=options.parallel,
-                exclude_failures=options.keep_going,
-                exclude=options.excludes,
-                compiler_directives=options.directives,
-                force=options.force,
-                quiet=options.quiet,
-                **options.options)
-
-            if ext_modules and options.build:
-                if len(ext_modules) > 1 and options.parallel > 1:
-                    if pool is None:
-                        pool = multiprocessing.Pool(options.parallel)
-                    pool.map_async(run_distutils, [
-                        (base_dir, [ext]) for ext in ext_modules])
-                else:
-                    run_distutils((base_dir, ext_modules))
-    except:
+                run_distutils((str(base_dir), ext_modules))
+    except Exception:
         if pool is not None:
             pool.terminate()
         raise
@@ -139,6 +143,8 @@ def cython_compile(path_pattern, options):
         if pool is not None:
             pool.close()
             pool.join()
+
+    return num_files_compiled
 
 
 def run_distutils(args):
@@ -163,71 +169,108 @@ def run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def build_args(args):
+def construct_options(args):
     from optparse import OptionParser
-    parser = OptionParser(usage='%prog [options] [sources and packages]+')
+    parser = OptionParser(usage='%prog [options] source_dir [options]')
 
-    parser.add_option('-X', '--directive', metavar='NAME=VALUE,...', dest='directives',
-                      type=str, action='callback', callback=parse_directives, default={},
-                      help='set a compiler directive')
-    parser.add_option('-s', '--option', metavar='NAME=VALUE', dest='options',
-                      type=str, action='callback', callback=parse_options, default={},
-                      help='set a cythonize option')
-    parser.add_option('-3', dest='python3_mode', action='store_true',
-                      help='use Python 3 syntax mode by default')
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
-                      help='generate annotated HTML page for source files')
-
-    parser.add_option('-x', '--exclude', metavar='PATTERN', dest='excludes',
-                      action='append', default=[],
-                      help='exclude certain file patterns from the compilation')
-
-    parser.add_option('-b', '--build', dest='build', action='store_true',
-                      help='build extension modules using distutils')
-    parser.add_option('-i', '--inplace', dest='build_inplace', action='store_true',
-                      help='build extension modules in place using distutils (implies -b)')
+                      help='generate annotated HTML for C source files')
     parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
-                      type=int, default=parallel_compiles,
-                      help=('run builds in N parallel jobs (default: %d)' %
-                            parallel_compiles or 1))
+                      type=int, default=0,
+                      help='run builds in N parallel jobs (default is 0)')
     parser.add_option('-f', '--force', dest='force', action='store_true',
                       help='force recompilation')
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
-                      help='be less verbose during compilation')
+                      help='less verbose during Cython compile (no effect on C compile)')
 
-    parser.add_option('--lenient', dest='lenient', action='store_true',
-                      help='increase Python compatibility by ignoring some compile time errors')
-    parser.add_option('-k', '--keep-going', dest='keep_going', action='store_true',
-                      help='compile as much as possible, ignore compilation failures')
+    options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
+    if not args or len(args) != 1:
+        parser.error("one source dir should be specified")
+    path = Path(args[0]).resolve()
+    if not path.is_dir():
+        parser.error(f"not a valid source dir: {path}")
 
-    options, args = parser.parse_args(args)
-    if not args:
-        parser.error("no source files provided")
-    if options.build_inplace:
-        options.build = True
-    if multiprocessing is None:
-        options.parallel = 0
-    if options.python3_mode:
-        options.options['language_level'] = 3
-    return options, args
+    # Some options are just set, i.e. no command line support given.
+    options.directives = {'language_level': 3}
+    options.options = {}
+    options.build = True
+    options.lenient = None
+    options.keep_going = None
+    options.emit_linenums = True
+    options.excludes = []
+    if options.annotate:
+        CythonOptions.annotate = True
+        print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected!")
+        print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
+        options.emit_linenums = False
+
+    return path, options
+
+
+def _delete_intermediate_pdb_files(path):
+    # Note: deletion on Windows is not synchronous. OK here since the result of deleting is not
+    # 'used immediately after the delete call'. Reliable solution in the AutoStar_Support
+    # component if needed.
+    int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
+                if not int_pdb.match("*win_amd64.pdb")]
+    print(f"{mod_name}: remove {len(int_pdbs)} intermediate pdbs from: {path}")
+    for int_pdb in int_pdbs:
+        int_pdb.unlink()
+        print(f"    deleted fle: {int_pdb}")
+
+
+def _copy_final_pdb_files(path):
+    int_sub_dir = r"build\lib.win-amd64-3.6"
+    int_dir = Path(path).parent / int_sub_dir
+
+    src_files = [src_file for src_file in int_dir.rglob("*.pdb")
+                 if src_file.match("*win_amd64.pdb")]
+    print(f"{mod_name}: copy {len(src_files)} final pdbs from intermediate dir: {int_dir}")
+    for src_file in src_files:
+        dst_file = Path(str(src_file).replace(int_sub_dir, ""))
+        shutil.copy(src_file, dst_file)
+        print(f"    dst file: {dst_file}")
+
+
+def _check_results(path, num_files_compiled) -> int:
+    """ Check that the number of pyd & pdb files generated equals the number
+    of source files that were compiled.
+    """
+    num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
+    num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
+    print(f"{mod_name}: check compilation results:")
+    print(f"    source files: {num_files_compiled}")
+    print(f"    pdb files:    {num_pdbs}")
+    print(f"    pyd files:    {num_pyds}")
+
+    exit_code = 5
+    if num_files_compiled == num_pdbs == num_pyds:
+        exit_code = 0
+    else:
+        print(f"{mod_name}: ERROR: wrong number of pyd or pdb files generated")
+    return exit_code
 
 
 def main(args=None):
+    path, options = construct_options(args)
+
     start_time = datetime.now()
-    print(f"START: {start_time}")
+    print(f"{mod_name} START TIME:   {start_time}")
+    print(f"    available (logical) cpus: {multiprocessing.cpu_count()}")
 
-    options, paths = build_args(args)
-    import pprint
-    pprint.pprint(options)
+    print(f"{mod_name}: source dir: {path}")
+    print(f"{mod_name}: options:")
+    pprint(options.__dict__, indent=4)
 
-    if options.annotate:  # can only be annotate or emit_linenums, not both
-        Options.annotate = True
+    num_files_compiled = cython_compile(path, options)
+    _delete_intermediate_pdb_files(path)
+    _copy_final_pdb_files(path)
+    success = _check_results(path, num_files_compiled)
 
-    for path in paths:
-        cython_compile(path, options)
+    print(f"{mod_name} START TIME:   {start_time}")
+    print(f"{mod_name} FINISH TIME:  {datetime.now()}")
 
-    print(f"START TIME:   {start_time}")
-    print(f"FINISH TIME:  {datetime.now()}")
+    sys.exit(success)
 
 
 if __name__ == '__main__':
