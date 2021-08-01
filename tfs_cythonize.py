@@ -56,6 +56,7 @@ from pathlib import Path, PurePath
 import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
+from optparse import OptionParser
 
 from Cython.Build.Dependencies import cythonize
 from Cython.Compiler import Options as CythonOptions
@@ -173,7 +174,6 @@ def run_distutils(args):
 
 
 def construct_options(args):
-    from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] source_dir [options]')
 
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
