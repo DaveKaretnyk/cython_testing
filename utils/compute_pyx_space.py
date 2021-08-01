@@ -56,6 +56,7 @@ def main():
         size = f.stat().st_size
         total_size += size
         print(f"{humanize_bytes(size)}    {f.absolute()}")
+    print(f"total number of  .pyx files:       {len(files)}")
     print(f"total size occupied by .pyx files: {humanize_bytes(total_size)}")
 
 
