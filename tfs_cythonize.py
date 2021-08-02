@@ -82,6 +82,8 @@ def create_extension(target, package_root):
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
 
+        # -Od: i.e. no compiler optimization, 'Ox' is the default hard coded into distutils:
+        #  distutils._msvccompiler.MSVCCompiler.
         # -Zi: Leave optimization as is ('Ox' apparently) but generate full debug info.
         # -Fd: specify the intermediate pdb file -> essential for parallel builds
         extra_compile_args=["-Zi", "-Od", f"-Fd{target.replace('.pyx', '.pdb')}"],
