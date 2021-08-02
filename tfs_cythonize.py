@@ -85,9 +85,6 @@ def create_extension(target, package_root):
         # -Zi: Leave optimization as is ('Ox' apparently) but generate full debug info.
         # -Fd: specify the intermediate pdb file -> essential for parallel builds
         extra_compile_args=["-Zi", "-Od", f"-Fd{target.replace('.pyx', '.pdb')}"],
-        # extra_compile_args=["-Zi", "-Od",
-        #                     f"-Fd{target.replace('.pyx', '.pdb')}",
-        #                     "/wd9025"],
 
         # /IGNORE:4197: suppress warning of function declared for export more than once
         # -debug=full: use debug info to create pdb files
