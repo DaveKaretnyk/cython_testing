@@ -56,6 +56,7 @@ from pathlib import Path, PurePath
 import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
+from optparse import OptionParser
 
 from Cython.Build.Dependencies import cythonize
 from Cython.Compiler import Options as CythonOptions
@@ -81,9 +82,11 @@ def create_extension(target, package_root):
         [target],
         libraries=["ole32", "oleaut32", "advapi32"],
 
+        # -Od: i.e. no compiler optimization, 'Ox' is the default hard coded into distutils:
+        #  distutils._msvccompiler.MSVCCompiler.
         # -Zi: Leave optimization as is ('Ox' apparently) but generate full debug info.
         # -Fd: specify the intermediate pdb file -> essential for parallel builds
-        extra_compile_args=["-Zi", f"-Fd{target.replace('.pyx', '.pdb')}"],
+        extra_compile_args=["-Zi", "-Od", f"-Fd{target.replace('.pyx', '.pdb')}"],
 
         # /IGNORE:4197: suppress warning of function declared for export more than once
         # -debug=full: use debug info to create pdb files
@@ -170,7 +173,6 @@ def run_distutils(args):
 
 
 def construct_options(args):
-    from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] source_dir [options]')
 
     parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
