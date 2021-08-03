@@ -19,8 +19,7 @@ from setup_utilities import cythonize  # noqa 402
 
 # Packages to cythonize protect company sensitive material.
 CYTHON_INCLUDE_PACKAGES = [
-    r'fei_common\infra',
-    r'fei_common\applications\sherpa',
+    r'fei_xxx',
 ]
 
 # Cython exclusions (package and modules) e.g.:

@@ -226,3 +226,7 @@ docs/_build
 /fei_xxx/*.pyx
 /fei_xxx/*.pyd
 !vs_env/call_compiler/*.log
+
+# dir AutoStar setup.py typically uses
+/to_transpile2/cythonized
+

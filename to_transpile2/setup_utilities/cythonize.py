@@ -311,10 +311,9 @@ def _collect_extensions(from_directory):
 
     collected_extensions = cythonize(
         [
-            Extension(  # ???DaveK temp
+            Extension(
                 '*',
-                [r"c:\github\AUTOSTAR\AUTOSTAR\AUTOSTAR_COMMON\python\cythonized\fei_common\infra"
-                 r"\tem_service\interface\tem_service.pyx"],
+                ['{}/*.pyx'.format(dirpath)],
                 libraries=['ole32', 'oleaut32', 'advapi32'],
 
                 # 'Od': disable optimizations, 'Zi': generate full debug info.
@@ -324,20 +323,7 @@ def _collect_extensions(from_directory):
                 # -debug=full: use debug info to create pdb files
                 extra_link_args=['/IGNORE:4197', '-debug:full'],
 
-            )
-            # Extension(
-            #     '*',
-            #     ['{}/*.pyx'.format(dirpath)],
-            #     libraries=['ole32', 'oleaut32', 'advapi32'],
-            #
-            #     # 'Od': disable optimizations, 'Zi': generate full debug info.
-            #     extra_compile_args=["-Zi", "-Od"],
-            #
-            #     # /IGNORE:4197: suppress warning of function declared for export more than once
-            #     # -debug=full: use debug info to create pdb files
-            #     extra_link_args=['/IGNORE:4197', '-debug:full'],
-            #
-            # ) for dirpath in cython_extension_directories
+            ) for dirpath in cython_extension_directories
         ],
         # Set language level to 3.X, else prints with keyword parameters do not compile.
         compiler_directives={'language_level': '3'},
