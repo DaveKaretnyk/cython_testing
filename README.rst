@@ -14,10 +14,20 @@ fei_xxx
 Directory to deploy transpiled code to for testing. Contents not under source
 control (apart from __int__.py).
 
+tests
+-----
+Unit tests for code that matters.
+
 to_transpile
 ------------
-The sample Python code to transpile.
+Some sample Python code to transpile. Just over 100 .pyx files.
 
 to_transpile2
 -------------
-The sample Python code to transpile.
+Some sample Python code to transpile. Just a few files (.pyx and .py). Also
+contains a basic setup.py copied from AutoStar.
+
+utils
+-----
+Some utility scripts that might useful.
+
