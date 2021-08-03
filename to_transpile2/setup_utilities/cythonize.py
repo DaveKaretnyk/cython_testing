@@ -338,7 +338,7 @@ def _collect_extensions(from_directory):
 
 
 def _remove_items(target_directory, exclude_list):
-    """ Remove specified items from the target directory """
+    """ Remove specified files from the target directory """
 
     print("\nRemove specified items from: ", target_directory)
     for _path, dirnames, filenames in os.walk(target_directory):
@@ -375,7 +375,8 @@ def build_cython_packages(self,
                           cython_excluded_packages,
                           cython_excluded_modules,
                           incremental=False,
-                          dist_excluded_items=None):
+                          dist_excluded_items=None,
+                          dist_excluded_files=None):
     """ Build the python packages. """
 
     start_build_cython_packages = time.time()
@@ -419,9 +420,12 @@ def build_cython_packages(self,
         print("\nbuild_ext.run(self)")
         print("")
         os.chdir(cython_directory)
-        old_inplace = self.inplace
         self.inplace = 1
         build_ext.run(self)
+
+    if dist_excluded_files:
+        _remove_items(os.path.join(cython_directory, dist_root_name),
+                      dist_excluded_files)
 
     print("\nCreate wheel")
     print("")
@@ -445,4 +449,3 @@ def build_cython_packages(self,
     print("\nBuild_cython_packages done. Time Elapsed: ", d)
 
     os.chdir(root)
-
