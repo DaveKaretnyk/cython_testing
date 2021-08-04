@@ -30,14 +30,14 @@ def _patch_msvc_compiler(optimize=False):
     # The distutils compiler file to be patched.
     target_file = Path(sys.executable).parent / "Lib/distutils/_msvccompiler.py"
 
-    with open(str(target_file), "r", newline='') as f:
+    with open(str(target_file), "r", newline='') as f:  # use default encoding of platform
         content = f.read()
 
     on = "'/nologo', '/Ox', '/W3', '/GL', '/DNDEBUG'"  # /Ox: default optimization via distutils
     off = "'/nologo', '/Od', '/W3', '/GL', '/DNDEBUG'"  # /Od: optimization off
     content = content.replace(off, on) if optimize else content.replace(on, off)
 
-    with open(str(target_file), "w", newline='') as f:
+    with open(str(target_file), "w", newline='') as f:  # use default encoding of platform
         f.write(content)
     print(f"setup._patch_msvc_compiler: set optimize {optimize} completed")
 
