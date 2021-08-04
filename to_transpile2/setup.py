@@ -3,13 +3,51 @@
 # information of FEI Company.
 """ Example 'AutoStar style' setup.py.
 """
-from os import path
 import sys
 from pathlib import Path
-from setuptools import setup, find_packages
-from setuptools.command.develop import develop
+from os import path
 
-from Cython.Distutils import build_ext
+
+# noinspection DuplicatedCode
+def _patch_msvc_compiler(optimize=False):
+    """ Switches the Visual Studio compiler C optimization flag off / on.
+
+    This is done by changing the flag in the distutils module source file so
+    must be called before that module is imported.
+    """
+    print(f"setup._patch_msvc_compiler: optimize? {optimize}")
+    print(f"    args: {sys.argv}")
+
+    # targets used via Jenkins builds
+    cython_commands = ["test", "cythonize", "cythonize_incremental"]
+    cython_build = bool(set(sys.argv) & set(cython_commands))
+    if not cython_build:
+        print("setup._patch_msvc_compiler: not a Cython build so no compiler patch needed")
+        return
+    else:
+        print("setup._patch_msvc_compiler: Cython build so compiler patch needed")
+
+    # The distutils compiler file to be patched.
+    target_file = Path(sys.executable).parent / "Lib/distutils/_msvccompiler.py"
+
+    with open(str(target_file), "r", newline='') as f:
+        content = f.read()
+
+    on = "'/nologo', '/Ox', '/W3', '/GL', '/DNDEBUG'"  # /Ox: default optimization via distutils
+    off = "'/nologo', '/Od', '/W3', '/GL', '/DNDEBUG'"  # /Od: optimization off
+    content = content.replace(off, on) if optimize else content.replace(on, off)
+
+    with open(str(target_file), "w", newline='') as f:
+        f.write(content)
+    print(f"setup._patch_msvc_compiler: set optimize {optimize} completed")
+
+
+_patch_msvc_compiler(optimize=False)
+
+from setuptools import setup, find_packages     # noqa
+from setuptools.command.develop import develop  # noqa
+
+from Cython.Distutils import build_ext          # noqa
 
 # Add parent directory of this module to path: needed utility code lives outside the normal
 # source tree.
@@ -127,9 +165,60 @@ class CythonizeCommand(build_ext):
                                         dist_excluded_items=DIST_EXCLUDED_ITEMS_FROM_TEST_WHL)
 
 
-# print(">>> ENTER SETUP.PY")  # ???DaveK temp
-# from pprint import pprint
-# pprint(globals())
+class CythonizeIncremental(build_ext):
+    """ Setuptools command to incrementally cythonize only changed files
+    """
+    description = 'FEI AutoStar_Common wheel: fully cythonized'
+
+    # Inheriting from old style Python class so no __init__ and super call.
+    # def __init__(self):
+    #     super(DevelopCommand, self).__init__()
+
+    def initialize_options(self):
+        build_ext.initialize_options(self)
+
+    def run(self):
+        cythonize.build_cython_packages(self,
+                                        root=_here,
+                                        wheel_name="fei_xxx",
+                                        dist_root_name="fei_xxx",
+                                        dist_excluded_packages=DIST_EXCLUDED_PACKAGES,
+                                        cython_include_packages=CYTHON_INCLUDE_PACKAGES,
+                                        cython_excluded_packages=CYTHON_EXCLUDED_PACKAGES,
+                                        cython_excluded_modules=CYTHON_EXCLUDED_MODULES,
+                                        incremental=True,
+                                        dist_excluded_items=DIST_EXCLUDED_ITEMS_FROM_TEST_WHL)
+
+
+class TestCommand(build_ext):
+    """ Setuptools command for deployment in simulation mode.
+
+    The application is still cythonized, but also test directories, test
+    scripts, and test applications are part of the distribution. Test
+    scripts and applications, however, are not cythonized.
+    It converts tagged py files to Cython extensions and builds them.
+    """
+
+    # Inheriting from old style Python class so no __init__ and super call.
+    # def __init__(self):
+    #     super(DevelopCommand, self).__init__()
+
+    description = 'FEI AutoStar_Common wheel: fully cythonized but test source'
+
+    def initialize_options(self):
+        build_ext.initialize_options(self)
+
+    def run(self):
+        cythonize.build_cython_packages(self,
+                                        root=_here,
+                                        wheel_name="fei_xxx",
+                                        dist_root_name="fei_xxx",
+                                        dist_excluded_packages=EXCLUDE_FOR_TEST,
+                                        cython_include_packages=CYTHON_INCLUDE_PACKAGES,
+                                        cython_excluded_packages=CYTHON_EXCLUDED_PACKAGES,
+                                        cython_excluded_modules=CYTHON_EXCLUDED_MODULES)
+
+
 setup(
     name="fei_xxx",
 
@@ -148,6 +237,8 @@ setup(
     cmdclass={
         "develop": DevelopCommand,
         "cythonize": CythonizeCommand,
+        'test': TestCommand,
+        'cythonize_incremental': CythonizeIncremental
     },
 
     package_data={
@@ -169,6 +260,5 @@ setup(
              '*.config', '*.csv', '*.dat', '*.emi'],
     },
 )
-# print(">>> EXIT SETUP.PY")  # ???DaveK temp
-# from pprint import pprint
-# pprint(globals())
+
+_patch_msvc_compiler(optimize=True)
