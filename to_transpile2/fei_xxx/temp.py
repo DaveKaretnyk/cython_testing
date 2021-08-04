@@ -1,4 +1,3 @@
-import sys
 from pprint import pprint
 import glob
 from pathlib import Path
@@ -125,25 +124,25 @@ if __name__ == '__main__':
     # from tfs_cythonize import _tidy_up_pdb_files
     # _tidy_up_pdb_files(r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx')
 
-    # from tfs_cythonize import find_dist_base
-    # some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx\\'
-    # base_dir, package_path = find_dist_base(some_dir)
-    # print(f"checking: {some_dir}")
-    # print(f"    base_dir:       {base_dir}")
-    # print(f"    package_path:   {package_path}")
-    #
-    # some_dir = r'C:\github\cython_testing\to_transpile\fei_xxx'
-    # base_dir, package_path = find_dist_base(some_dir)
-    # print(f"checking: {some_dir}")
-    # print(f"    base_dir:       {base_dir}")
-    # print(f"    package_path:   {package_path}")
-    #
-    # from Cython.Build.Dependencies import extended_iglob
-    # some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx'
-    # all_paths = map(os.path.abspath, extended_iglob(some_dir))
-    # for path in all_paths:
-    #     print(f"entry: {path}")
-    #     print(f"type:  {type(path)}")
+    from tfs_cythonize import find_dist_base
+    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx\\'
+    base_dir, package_path = find_dist_base(some_dir)
+    print(f"checking: {some_dir}")
+    print(f"    base_dir:       {base_dir}")
+    print(f"    package_path:   {package_path}")
+
+    some_dir = r'C:\github\cython_testing\to_transpile\fei_xxx'
+    base_dir, package_path = find_dist_base(some_dir)
+    print(f"checking: {some_dir}")
+    print(f"    base_dir:       {base_dir}")
+    print(f"    package_path:   {package_path}")
+
+    from Cython.Build.Dependencies import extended_iglob
+    some_dir = r'C:\github\cython_testing\to_transpile2\my_utils\fei_xxx'
+    all_paths = map(os.path.abspath, extended_iglob(some_dir))
+    for path in all_paths:
+        print(f"entry: {path}")
+        print(f"type:  {type(path)}")
 
     import os
     import multiprocessing
@@ -152,12 +151,3 @@ if __name__ == '__main__':
 
     this_file_name = Path(__file__).stem
     print(f"{this_file_name}")
-
-    py_exe = Path(sys.executable)
-    print(f"sys.executable: {py_exe}")
-    env_dir = py_exe.parent
-    print(f"env dir: {env_dir}")
-    target_file = Path(sys.executable).parent / "Lib\distutils\_msvccompiler.py"
-    print(f"target file: {target_file}")
-    file_ok = target_file.exists()
-    print(f"    exists? {file_ok}")
