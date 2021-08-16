@@ -48,21 +48,50 @@ Key specific changes to Cython.Build.Cythonize.py:
 """
 import os
 import sys
+import atexit
 import shutil
 import tempfile
 from datetime import datetime
 from pprint import pprint
 from pathlib import Path, PurePath
 import multiprocessing
-from setuptools import Extension
-from distutils.core import setup
 from argparse import ArgumentParser
-
-from Cython.Build.Dependencies import cythonize
-from Cython.Compiler import Options as CythonOptions
 
 
 mod_name = str(Path(__file__).stem)
+
+
+# noinspection DuplicatedCode
+def _patch_msvc_compiler(optimize=False):
+    """ Switches the Visual Studio compiler C optimization flag off / on.
+
+    This is done by changing the flag in the distutils module source file so
+    must be called before that module is imported.
+    """
+    print(f"{mod_name}._patch_msvc_compiler: optimize? {optimize}")
+
+    # The distutils compiler file to be patched.
+    target_file = Path(sys.executable).parent / "Lib/distutils/_msvccompiler.py"
+
+    with open(str(target_file), "rt", newline='', encoding="utf-8") as f:
+        content = f.read()
+
+    on = "'/nologo', '/Ox', '/W3', '/GL', '/DNDEBUG'"  # /Ox: default optimization via distutils
+    off = "'/nologo', '/Od', '/W3', '/GL', '/DNDEBUG'"  # /Od: optimization off
+    content = content.replace(off, on) if optimize else content.replace(on, off)
+
+    with open(str(target_file), "wt", newline='', encoding="utf-8") as f:
+        f.write(content)
+    print(f"{mod_name}._patch_msvc_compiler: set optimize {optimize} completed")
+
+
+_patch_msvc_compiler(optimize=False)
+
+from setuptools import Extension                        # noqa
+from distutils.core import setup                        # noqa
+
+from Cython.Build.Dependencies import cythonize         # noqa
+from Cython.Compiler import Options as CythonOptions    # noqa
 
 
 class TranspileArgs:
@@ -275,6 +304,9 @@ def _check_results(path, num_files_compiled) -> int:
 
 
 def main():
+    # Undo the compiler path: this will handle most exits of the program apart
+    # from 'really bad crashes', see atexit docs.
+    atexit.register(_patch_msvc_compiler, optimize=True)
     path, options = construct_options()
 
     start_time = datetime.now()
