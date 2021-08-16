@@ -56,13 +56,41 @@ from pathlib import Path, PurePath
 import multiprocessing
 from setuptools import Extension
 from distutils.core import setup
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 from Cython.Build.Dependencies import cythonize
 from Cython.Compiler import Options as CythonOptions
 
 
 mod_name = str(Path(__file__).stem)
+
+
+class TranspileArgs:
+    """ Define the Cython build transpile arguments.
+
+    * path is mandatory & must be supplied as a positional command line arg.
+    * some args can be optionally supplied on the commend line.
+    * some args are only defined here, i.e. cannot be specified on command
+      line.
+    """
+    def __init__(self) -> None:
+        self.path = None
+        """ Path (dir) to process"""
+
+        # These args are only defined here.
+        self.directives = {'language_level': 3}
+        self.options = {}
+        self.build = True
+        self.lenient = None
+        self.keep_going = None
+        self.emit_linenums = True
+        self.excludes = []
+
+        # These args might be supplied via the command line.
+        self.annotate = False
+        self.parallel = 0
+        self.force = False
+        self.quiet = False
 
 
 def create_extension(target, package_root):
@@ -172,41 +200,34 @@ def run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def construct_options(args):
-    parser = OptionParser(usage='%prog [options] source_dir [options]')
+def construct_options():
+    parser = ArgumentParser(
+        description="Cython build all pyx files in the supplied directory (recursively)")
+    parser.add_argument("path", type=str, help="the path (directory) to be processed")
+    parser.add_argument("-f", "--force", dest="force", action="store_true",
+                        help="force recompilation")
+    parser.add_argument("-q", "--quiet", dest="quiet", action="store_true",
+                        help="less verbose during Python to C translation "
+                             "(no effect on C compilation)")
+    parser.add_argument("-j", "--parallel", dest="parallel", metavar="N",
+                        type=int, default=0,
+                        help="run builds in N parallel jobs (default is 0 -> no parallelization)")
+    parser.add_argument("-a", "--annotate", dest="annotate", action="store_true",
+                        help="generate annotated HTML for C source files "
+                             "(use for diagnostics only, not in production builds)")
 
-    parser.add_option('-a', '--annotate', dest='annotate', action='store_true',
-                      help='generate annotated HTML for C source files')
-    parser.add_option('-j', '--parallel', dest='parallel', metavar='N',
-                      type=int, default=0,
-                      help='run builds in N parallel jobs (default is 0)')
-    parser.add_option('-f', '--force', dest='force', action='store_true',
-                      help='force recompilation')
-    parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
-                      help='less verbose during Cython compile (no effect on C compile)')
-
-    options, args = parser.parse_args(args)  # if --help arg => print help and exit(0)
-    if not args or len(args) != 1:
-        parser.error("one source dir should be specified")
-    path = Path(args[0]).resolve()
+    my_args = parser.parse_args(namespace=TranspileArgs())
+    path = Path(my_args.path).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
 
-    # Some options are just set, i.e. no command line support given.
-    options.directives = {'language_level': 3}
-    options.options = {}
-    options.build = True
-    options.lenient = None
-    options.keep_going = None
-    options.emit_linenums = True
-    options.excludes = []
-    if options.annotate:
+    if my_args.annotate:
         CythonOptions.annotate = True
-        print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected!")
+        print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
-        options.emit_linenums = False
+        my_args.emit_linenums = False
 
-    return path, options
+    return path, my_args
 
 
 def _delete_intermediate_pdb_files(path):
@@ -253,8 +274,8 @@ def _check_results(path, num_files_compiled) -> int:
     return exit_code
 
 
-def main(args=None):
-    path, options = construct_options(args)
+def main():
+    path, options = construct_options()
 
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
