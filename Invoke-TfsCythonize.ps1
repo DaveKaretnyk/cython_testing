@@ -9,27 +9,29 @@
     .DESCRIPTION
     Transpiles (cythonizes) all .pyx files in the directory given as input.
 
-    * This is a PoSh wrapper around a Python script that does that actual Cython build work: see
-      tfs_cythonize.py for explanation.
-    * The PoSh wrapper ensures that the required environment variables are set before staring the
+    * See tfs_cythonize.py for explanation.
+    * This is a PoSh wrapper around a Python script that does the real work.
+    * The wrapper ensures that the required environment variables are set before starting the
       Cython build. See function Set-CythonEnv is this script.
-    * The caller must supply the directory to be processe and the nmae of the Python env to use
-      (must contin the Cython package).
- 
-    .PARAMETER path
-     The directory to be processed.
+    * The caller supplies the name of the Python env to use (must contain the Cython package) and
+      the directory to be processed. All other args are optional, see tfs_cythonize.py for full
+      information.
+    * The invocation is basically the same as calling the Python script directly. But for PoSh
+      the Python env to be used has to be supplied.
+
     .INPUTS
     None. You cannot pipe objects to this script.
     .OUTPUTS
     None. Script does not generate any output.
     Calls 'Exit 0' if successful. Else Exit with non-zero value and message to terminal: check
     $LASTEXITCODE and $Error.
+
+    .EXAMPLE
+    .\Invoke-TfsCythonize.ps1 AutoStar_test C:\github\AutoStar\AutoStar_Common\python\fei
+    .EXAMPLE
+    .\Invoke-TfsCythonize.ps1 AutoStar_test --help
+
 #>
-Param(
-    [Parameter(Mandatory, HelpMessage='env name')] [String]$envName,
-    [Parameter(Mandatory, HelpMessage='dir to process')] [STring]$path
-#    [Parameter(Mandatory=$FALSE, HelpMessage='enable unstable build for jenkins ')] [Boolean]$unstableBuildIfViolations = $FALSE
-)
 
 Function Set-CythonEnv {
 <#
@@ -113,13 +115,27 @@ Function Set-CythonEnv {
 # ------------------------------------------------------------------------------------------------
 # Script code begins here.
 
-Set-CythonEnv # set environment to allow C compilation from command line
+$pythonExe = 'python.exe'
+$envName, $rest = $args
+$myArgs = @("$PSScriptRoot\tfs_cythonize.py") + $rest
+
+if ($myArgs.Contains('--help') -or $myArgs.Contains('-h')) {
+    Out-Host -InputObject 'Invoke-TfsCythonize: just display help...'
+}
+else {
+    Set-CythonEnv # set environment to allow C compilation from command line
+}
 
 # Assumption: using an EDM env located in the standard location.
-& "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
+$activateScript = "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
+if (-not (Test-Path -Path $activateScript -PathType Leaf)) {
+    Out-Host -InputObject ('Invoke-TfsCythonize: no such env: {0}' -f $envName)
+    Exit 3
+}
+& $activateScript
 Out-Host -InputObject ('Invoke-TfsCythonize: activate env: {0}' -f $envName)
 
-python.exe "$PSScriptRoot\tfs_cythonize.py" $path
+& $pythonExe $myArgs
 $pythonResult = $LASTEXITCODE
 if ($pythonResult -ne 0) {
     Out-Host -InputObject ('Invoke-TfsCythonize: ERROR exit: {0}' -f $pythonResult)

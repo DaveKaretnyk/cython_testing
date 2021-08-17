@@ -116,8 +116,8 @@ class TranspileArgs:
         self.excludes = []
 
         # These args might be supplied via the command line.
-        self.annotate = False
         self.parallel = 0
+        self.annotate = False
         self.force = False
         self.quiet = False
 
