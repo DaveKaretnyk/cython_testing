@@ -7,8 +7,9 @@ Transpiles (cythonizes) all .pyx files in the directory given as input.
     * --annotate: generate annotated HTML page for C source files, DO NOT USE
                   in production since it disables mapping back to .pyx files
                   from generated symbols (pdbs)
-    * --parallel: run C compilation in parallel (int)
-    * --force: rebuild even if not soure file changes
+    * --parallel: run C compilation in parallel (int) experimental, DO NOT USE
+                  in production builds for now
+    * --force: rebuild even if not source file changes
     * --quiet: less verbose during Cython compile (no effect on C compile)
 
 Prerequisites:
@@ -240,10 +241,11 @@ def construct_options():
                              "(no effect on C compilation)")
     parser.add_argument("-j", "--parallel", dest="parallel", metavar="N",
                         type=int, default=0,
-                        help="run builds in N parallel jobs (default is 0 -> no parallelization)")
+                        help="run builds in N parallel jobs (default is 0 -> no parallelization)"
+                             "experimental, DO NOT USE in production builds for now")
     parser.add_argument("-a", "--annotate", dest="annotate", action="store_true",
                         help="generate annotated HTML for C source files "
-                             "(use for diagnostics only, not in production builds)")
+                             "(use for diagnostics only, DO NOT USE in production builds)")
 
     my_args = parser.parse_args(namespace=TranspileArgs())
     path = Path(my_args.path).resolve()
