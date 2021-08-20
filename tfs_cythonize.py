@@ -68,6 +68,8 @@ def _patch_msvc_compiler(optimize: bool = False) -> None:
 
     This is done by changing the flag in the distutils module source file so
     must be called before that module is imported.
+
+    :param optimize: switch optimization on/off
     """
     print(f"{mod_name}._patch_msvc_compiler: optimize? {optimize}")
 
@@ -131,6 +133,9 @@ def _create_extension(target: str, package_root: str) -> Extension:
       compiled.
     * package_root is the root component of the fully qualified module name
       that will be used. E.g. 'fei_xxx' in the case of 'fei_xxx.ab.pq.xy'.
+
+    :param target: the directory to be processed
+    :param package_root: root part of the computed dotted name
     """
     if package_root not in target:
         raise ValueError(f"'{package_root}' not found in file name: '{target}'")
@@ -171,15 +176,18 @@ def _find_dist_base(path: Path) -> Tuple[Path, str]:
     This is different from the equivalent function in the Cython code base
     which computes the root name based on the location of the top most
     __init__.py file. For most AutoStar components that will not work.
+
+    :param path: directory to be processed
     """
     return path.parent, path.stem
 
 
 def _cython_compile(path: Path, options: _TranspileArgs) -> int:
     """ Cython build all .pyx files in the supplied path using the
-    transpile args provided.
+    transpile args provided. Return the number of files processed.
 
-    Return the number of files processed.
+    :param path: directory to be processed
+    :param options: options / arguments to be used in the build
     """
     pool = None
     try:
@@ -227,6 +235,8 @@ def _run_distutils(args) -> None:
     * args is a tuple of base directory & module list.
     * args are passed like this to allow use of pool.map_aysnc when compiling
       the modules in parallel with multiple processes.
+
+    :param args: tuple of base directory and module list
     """
     base_dir, ext_modules = args
     script_args = ['build_ext', '-i']
@@ -248,6 +258,8 @@ def _run_distutils(args) -> None:
 def _construct_options() -> Tuple[Path, _TranspileArgs]:
     """For the program arguments supplied, construct the Cython build options
     to be used.
+
+    Return full path to be processed and options/args to be used.
 
     Some build settings can be optionally supplied from the command line,
     others are hard coded in the _TranspileArgs class.
@@ -288,6 +300,8 @@ def _delete_intermediate_pdb_files(path: Path) -> None:
     Note: deletion on Windows is not synchronous. OK here since the result of
     deleting is not 'used immediately after the delete call'. Reliable
     solution in the AutoStar_Support component if needed.
+
+    :param path: path to be processed
      """
     int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
                 if not int_pdb.match("*win_amd64.pdb")]
@@ -300,6 +314,8 @@ def _delete_intermediate_pdb_files(path: Path) -> None:
 def _copy_final_pdb_files(path: Path) -> None:
     """For the path supplied copy the final .pdb files to the same location as
     the corresponding .pyx files.
+
+    :param path: path to be processed
     """
     int_sub_dir = r"build\lib.win-amd64-3.6"
     int_dir = Path(path).parent / int_sub_dir
@@ -318,6 +334,9 @@ def _check_results(path: Path, num_files_compiled: int) -> int:
     of source files that were compiled.
 
     Return 0 if ok else return non-zero.
+
+    :param path: path to be processed
+    :param  num_files_compiled: number of expected files
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
     num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
