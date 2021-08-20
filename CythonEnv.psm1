@@ -17,6 +17,8 @@ Function Set-DevEnv {
       via VCVARSALL.BAT):
             $ENV:DISTUTILS_USE_SDK = 1
             $ENV:PY_VCRUNTIME_REDIST='No thanks'
+      Though these are not specific to Cython extensions, they should be used when building any
+      C extension.
     * Exit called if serious error that cannot be recovered from.
     * After setup list the environment variables to stdout (mainly for trouble shooting).
 
@@ -98,15 +100,16 @@ Function Set-DevEnvClean {
       via VCVARSALL.BAT):
             $ENV:DISTUTILS_USE_SDK = 1
             $ENV:PY_VCRUNTIME_REDIST='No thanks'
+      Though these are not specific to Cython extensions, they should be used when building any
+      C extension.
     * Exit called if serious error that cannot be recovered from.
     * After setup list the environment variables to stdout (mainly for trouble shooting).
-    * Difference compared to Set-DevEnv?
+    * Difference compared to Set-DevEnv used previously in AutoStar?
         * Get the env vars via a temp file.
         * The vars of the current instance are cleared => the final set of vars are ONLY those
           supplied via VCVARSALL.BAT and whatever thd cmd shell creates when first instantiated.
         * Comes via John Robbins at Wintellect:
           https://github.com/Wintellect/WintellectPowerShell/blob/master/Code/Invoke-CmdScript.ps1
- #>
 
     .INPUTS
     None. You cannot pipe objects to this function.

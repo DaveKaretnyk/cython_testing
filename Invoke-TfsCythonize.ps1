@@ -45,20 +45,26 @@ Function Set-CythonEnv {
       VsDevCmd.bat - resulted in incorrect Cython build via Jenkins.
     * Exit called if serious error that cannot be recovered from.
     * After setup list the environment variables to stdout (mainly for trouble shooting).
+    * If the key C extension env vars ($ENV:DISTUTILS_USE_SDK and $ENV:PY_VCRUNTIME_REDIST) are
+      already set as required then assume all env vars are properly set and do nothing.
 
     .INPUTS
     None. You cannot pipe objects to this function.
     .OUTPUTS
     None. Function does not generate any output.
 #>
+    if ($ENV:DISTUTILS_USE_SDK -eq 1 -and $ENV:PY_VCRUNTIME_REDIST -eq 'No thanks') {
+        $msg = 'Invoke-TfsCythonize\Set-CythonEnv: env vars do not need set...'
+        Write-Host $msg  -ForegroundColor Yellow
+        Out-Host -InputObject '    basis: the key C extension env vars are already set:'
+        Out-Host -InputObject ('      $ENV:DISTUTILS_USE_SDK   = {0}' -f $ENV:DISTUTILS_USE_SDK)
+        Out-Host -InputObject ('      $ENV:PY_VCRUNTIME_REDIST = {0}' -f $ENV:PY_VCRUNTIME_REDIST)
+        return
+    }
 
     # Which script to use to setup the env? VCVARSALL.BAT is the suggestion by, e.g., Dower.
-    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
-    # $possibleDirs = @(
-    #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools',
-    #    'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\Tools'
-    # )
-    # $targetScript = 'VsDevCmd.bat' # needs not parameters
+    # I.e. rather than VsDevCmd.bat.
+    #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     $possibleDirs = @(
         # 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC', # Visual Studio 2015
         'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build',
@@ -101,7 +107,7 @@ Function Set-CythonEnv {
     # Explanation here:
     #     https://stevedower.id.au/blog/building-for-python-3-5-part-two/     
     $ENV:DISTUTILS_USE_SDK = 1
-    $ENV:PY_VCRUNTIME_REDIST='No thanks'
+    $ENV:PY_VCRUNTIME_REDIST = 'No thanks'
 
     $envVars = Get-ChildItem Env: | Format-List # Format-List ensures value does not get chopped
     Out-Host -InputObject 'Invoke-TfsCythonize\Set-CythonEnv: env variables:'
