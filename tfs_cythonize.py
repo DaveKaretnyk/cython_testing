@@ -95,7 +95,7 @@ from Cython.Build.Dependencies import cythonize         # noqa
 from Cython.Compiler import Options as CythonOptions    # noqa
 
 
-class TranspileArgs:
+class _TranspileArgs:
     """ Define the Cython build transpile arguments.
 
     * path is mandatory & must be supplied as a positional command line arg.
@@ -123,7 +123,7 @@ class TranspileArgs:
         self.quiet = False
 
 
-def create_extension(target, package_root):
+def _create_extension(target, package_root):
     if package_root not in target:
         raise ValueError(f"'{package_root}' not found in file name: '{target}'")
 
@@ -152,7 +152,7 @@ def create_extension(target, package_root):
     )
 
 
-def find_dist_base(path: PurePath) -> (PurePath, str):
+def _find_dist_base(path: PurePath) -> (PurePath, str):
     """ For the path supplied return the base directory and the root name of
     the package / dist as a tuple.
 
@@ -167,12 +167,12 @@ def find_dist_base(path: PurePath) -> (PurePath, str):
     return path.parent, path.stem
 
 
-def cython_compile(path, options) -> int:
+def _cython_compile(path, options) -> int:
     pool = None
     try:
-        base_dir, dist_root_name = find_dist_base(path)
+        base_dir, dist_root_name = _find_dist_base(path)
         print(f"{mod_name}: creating setuptools.Extension instances:")
-        targets = [create_extension(str(target), dist_root_name)
+        targets = [_create_extension(str(target), dist_root_name)
                    for target in path.rglob("*.pyx")]
         num_files_compiled = len(targets)
 
@@ -192,10 +192,10 @@ def cython_compile(path, options) -> int:
             if len(ext_modules) > 1 and options.parallel > 1:
                 if pool is None:
                     pool = multiprocessing.Pool(options.parallel)
-                pool.map_async(run_distutils, [
+                pool.map_async(_run_distutils, [
                     (str(base_dir), [ext]) for ext in ext_modules])
             else:
-                run_distutils((str(base_dir), ext_modules))
+                _run_distutils((str(base_dir), ext_modules))
     except Exception:
         if pool is not None:
             pool.terminate()
@@ -208,7 +208,7 @@ def cython_compile(path, options) -> int:
     return num_files_compiled
 
 
-def run_distutils(args):
+def _run_distutils(args):
     base_dir, ext_modules = args
     script_args = ['build_ext', '-i']
     cwd = os.getcwd()
@@ -230,7 +230,7 @@ def run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def construct_options():
+def _construct_options():
     parser = ArgumentParser(
         description="Cython build all pyx files in the supplied directory (recursively)")
     parser.add_argument("path", type=str, help="the path (directory) to be processed")
@@ -247,7 +247,7 @@ def construct_options():
                         help="generate annotated HTML for C source files "
                              "(use for diagnostics only, DO NOT USE in production builds)")
 
-    my_args = parser.parse_args(namespace=TranspileArgs())
+    my_args = parser.parse_args(namespace=_TranspileArgs())
     path = Path(my_args.path).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
@@ -309,7 +309,7 @@ def main():
     # Undo the compiler path: this will handle most exits of the program apart
     # from 'really bad crashes', see atexit docs.
     atexit.register(_patch_msvc_compiler, optimize=True)
-    path, options = construct_options()
+    path, options = _construct_options()
 
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
@@ -319,7 +319,7 @@ def main():
     print(f"{mod_name}: options:")
     pprint(options.__dict__, indent=4)
 
-    num_files_compiled = cython_compile(path, options)
+    num_files_compiled = _cython_compile(path, options)
     _delete_intermediate_pdb_files(path)
     _copy_final_pdb_files(path)
     success = _check_results(path, num_files_compiled)

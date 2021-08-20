@@ -1,13 +1,13 @@
 from pathlib import PurePath
 
-from tfs_cythonize import find_dist_base
+from tfs_cythonize import _find_dist_base
 
 diagnostic_print = True
 
 
 def test_find_dist_base():
     some_dir = PurePath(r"C:\github\cython_testing\to_transpile2\my_utils\fei_xxx\\")
-    base_dir, package_root = find_dist_base(some_dir)
+    base_dir, package_root = _find_dist_base(some_dir)
     assert base_dir == PurePath(r"C:\github\cython_testing\to_transpile2\my_utils")
     assert package_root == "fei_xxx"
     if diagnostic_print:
@@ -18,7 +18,7 @@ def test_find_dist_base():
         print(f"        type is:    {package_root}")
 
     some_dir = PurePath(r"C:\github\cython_testing\to_transpile\fei_xxx")
-    base_dir, package_root = find_dist_base(some_dir)
+    base_dir, package_root = _find_dist_base(some_dir)
     assert base_dir == PurePath(r"C:\github\cython_testing\to_transpile")
     assert package_root == "fei_xxx"
     if diagnostic_print:
@@ -62,10 +62,9 @@ def test_find_dist_base_autostar():
     ]
 
     for autostar_dir, result in zip(autostar_dirs, results):
-        base_dir, package_root = find_dist_base(autostar_dir)
+        base_dir, package_root = _find_dist_base(autostar_dir)
         assert (base_dir, package_root) == result
         if diagnostic_print:
             print(f"checking: {autostar_dir}")
             print(f"    base_dir:       {base_dir}")
             print(f"    package_root:   {package_root}")
-
