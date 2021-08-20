@@ -44,7 +44,7 @@ here = path.abspath(path.dirname(__file__))
 class CythonizeCommand(build_ext):
     """ Setuptools command to cythonize the application (without
     test directories, test scripts, and test applications).
-    
+
     It converts tagged py files to Cython extensions and builds them.
     """
     # Inheriting from old style Python class so no __init__ and super call.

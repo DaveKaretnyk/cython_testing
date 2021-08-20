@@ -14,6 +14,10 @@ fei_xxx
 Directory to deploy transpiled code to for testing. Contents not under source
 control (apart from __int__.py).
 
+linting
+-------
+Contains some scripts for experimenting with linting tools.
+
 tests
 -----
 Unit tests for code that matters.
