@@ -4,12 +4,11 @@
 
 <#
     .SYNOPSIS
-    Run Python mypy check on 'fei_autostar_build' directory.
+    Run Python mypy check on 'tfs_cythonize.py'.
     .DESCRIPTION
-    Run Python mypy check on 'fei_autostar_build' directory.
+    Run Python mypy check on 'tfs_cythonize.py'.
     * Initial tryout of mypy: needs looked at more closely and options refined.
-    * The Python environment does not need to be activated, but it does rely on the env. fetched
-      from the build_definitions.yaml config file.
+    * The Python env to be used must be supplied.
 
     .INPUTS
     None. You cannot pipe objects to this script.
@@ -18,41 +17,50 @@
     Calls 'Exit 0' if successful. Else Exit with non-zero value and message to terminal: check
     $LASTEXITCODE and $Error.
 #>
-# Load dependent modules.
-$buildModule = "$PSScriptRoot\..\build\Build.psm1"
-Import-Module -Name $buildModule -Force
+if ($args.Length -eq 0) {
+    Out-Host -InputObject 'Invoke-LintingMypy: no EDM Python env supplied'
+    Exit 3
+}
+$envName = $args[0]
+$activateScript = "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
+if (-not (Test-Path -Path $activateScript -PathType Leaf)) {
+    $msg = 'Invoke-LintingMypy: cannot find env activate script: {0}'
+    Out-Host -InputObject ($msg -f $activateScript)
+    Exit 5
+}
 
 $exitCode = 0
-$sourceDir = "$PSScriptRoot\.." # scan recursively from the root dir for all Python files
+$sourceFile = Resolve-Path -Path  "$PSScriptRoot\..\tfs_cythonize.py"
 
 Out-Host -InputObject 'Invoke-LintingMypy: Running mypy check'
 Out-Host -InputObject 'Invoke-LintingMypy: ******************'
 
 $resultsDir = Join-Path -Path $PSScriptRoot -ChildPath '..\build\TestResults\mypy'
+$resultsDir = Resolve-Path -Path $resultsDir
 if (Test-Path $resultsDir -PathType Container) {
-    Build\Remove-FileSystemItem -Path $resultsDir -Recurse
+    Remove-Item -Path $resultsDir -Recurse
     Out-Host -InputObject ('Invoke-LintingMypy: remove last results dir: {0}' -f $resultsDir)
 }
 New-Item -ItemType Directory -Force -Path $resultsDir
 Out-Host -InputObject ('Invoke-LintingMypy: created dir for results: {0}' -f $resultsDir)
 
-Out-Host -InputObject ('Invoke-LintingMypy: checking directory: {0}' -f $sourceDir)
+Out-Host -InputObject ('Invoke-LintingMypy: checking file: {0}' -f $sourceFile)
 
-$pythonEnvName = Build\Get-EnvName
-Build\Enable-PythonEnv -envName $pythonEnvName
+& $activateScript
 
 $myArgs = @(
-    $sourceDir,
-    '--config-file', "$PSScriptRoot\tox.ini",
+    $sourceFile,
+    '--config-file',            "$PSScriptRoot\tox.ini",
     # options need looked into, e.g. Jenkins build results look different to local run?
-    '--any-exprs-report', $resultsDir,
-    # '--html-report', $resultsDir, needs configured properly? output not navigable?
-    '--lineprecision-report', $resultsDir,
-    '--txt-report', $resultsDir
+    '--any-exprs-report',       $resultsDir
+    #'--lineprecision-report',   $resultsDir
+    # html & text reports need lxml package...
+    # '--html-report', $resultsDir # needs configured properly? output not navigable?
+    # '--txt-report',             $resultsDir
 )
 & mypy.exe $myArgs
 
-Build\Disable-PythonEnv -envName $pythonEnvName
+deactivate
 
 $exitCode = $LASTEXITCODE
 if ($exitCode -ne 0) {

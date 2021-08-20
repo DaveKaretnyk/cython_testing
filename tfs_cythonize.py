@@ -57,7 +57,7 @@ from pprint import pprint
 from pathlib import Path
 import multiprocessing
 from argparse import ArgumentParser
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 
 mod_name = str(Path(__file__).stem)
 
@@ -111,12 +111,12 @@ class _TranspileArgs:
 
         # These args are only defined here.
         self.directives = {'language_level': 3}
-        self.options = {}
+        self.options: Dict[Any, Any] = {}
         self.build = True
         self.lenient = None
         self.keep_going = None
         self.emit_linenums = True
-        self.excludes = []
+        self.excludes: List[str] = []
 
         # These args might be supplied via the command line.
         self.parallel = 0
@@ -281,6 +281,8 @@ def _construct_options() -> Tuple[Path, _TranspileArgs]:
                              "(use for diagnostics only, DO NOT USE in production builds)")
 
     my_args = parser.parse_args(namespace=_TranspileArgs())
+    if my_args is None or my_args.path is None:
+        parser.error("failed to parse program args")
     path = Path(my_args.path).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
