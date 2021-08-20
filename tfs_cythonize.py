@@ -54,16 +54,16 @@ import shutil
 import tempfile
 from datetime import datetime
 from pprint import pprint
-from pathlib import Path, PurePath
+from pathlib import Path
 import multiprocessing
 from argparse import ArgumentParser
-
+from typing import Tuple
 
 mod_name = str(Path(__file__).stem)
 
 
 # noinspection DuplicatedCode
-def _patch_msvc_compiler(optimize=False):
+def _patch_msvc_compiler(optimize: bool = False) -> None:
     """ Switches the Visual Studio compiler C optimization flag off / on.
 
     This is done by changing the flag in the distutils module source file so
@@ -123,7 +123,15 @@ class _TranspileArgs:
         self.quiet = False
 
 
-def _create_extension(target, package_root):
+def _create_extension(target: str, package_root: str) -> Extension:
+    """ For the target directory and package root supplied return a setuptools
+    Extension instance.
+
+    * The extension instance defines how the generated C source file will be
+      compiled.
+    * package_root is the root component of the fully qualified module name
+      that will be used. E.g. 'fei_xxx' in the case of 'fei_xxx.ab.pq.xy'.
+    """
     if package_root not in target:
         raise ValueError(f"'{package_root}' not found in file name: '{target}'")
 
@@ -152,7 +160,7 @@ def _create_extension(target, package_root):
     )
 
 
-def _find_dist_base(path: PurePath) -> (PurePath, str):
+def _find_dist_base(path: Path) -> Tuple[Path, str]:
     """ For the path supplied return the base directory and the root name of
     the package / dist as a tuple.
 
@@ -167,7 +175,12 @@ def _find_dist_base(path: PurePath) -> (PurePath, str):
     return path.parent, path.stem
 
 
-def _cython_compile(path, options) -> int:
+def _cython_compile(path: Path, options: _TranspileArgs) -> int:
+    """ Cython build all .pyx files in the supplied path using the
+    transpile args provided.
+
+    Return the number of files processed.
+    """
     pool = None
     try:
         base_dir, dist_root_name = _find_dist_base(path)
@@ -208,7 +221,13 @@ def _cython_compile(path, options) -> int:
     return num_files_compiled
 
 
-def _run_distutils(args):
+def _run_distutils(args) -> None:
+    """ Run distutils on the args supplied.
+
+    * args is a tuple of base directory & module list.
+    * args are passed like this to allow use of pool.map_aysnc when compiling
+      the modules in parallel with multiple processes.
+    """
     base_dir, ext_modules = args
     script_args = ['build_ext', '-i']
     cwd = os.getcwd()
@@ -218,11 +237,7 @@ def _run_distutils(args):
             os.chdir(base_dir)
             temp_dir = tempfile.mkdtemp(dir=base_dir)
             script_args.extend(['--build-temp', temp_dir])
-        setup(
-            script_name='setup.py',
-            script_args=script_args,
-            ext_modules=ext_modules,
-        )
+        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,)
     finally:
         if base_dir:
             os.chdir(cwd)
@@ -230,7 +245,13 @@ def _run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def _construct_options():
+def _construct_options() -> Tuple[Path, _TranspileArgs]:
+    """For the program arguments supplied, construct the Cython build options
+    to be used.
+
+    Some build settings can be optionally supplied from the command line,
+    others are hard coded in the _TranspileArgs class.
+    """
     parser = ArgumentParser(
         description="Cython build all pyx files in the supplied directory (recursively)")
     parser.add_argument("path", type=str, help="the path (directory) to be processed")
@@ -261,10 +282,13 @@ def _construct_options():
     return path, my_args
 
 
-def _delete_intermediate_pdb_files(path):
-    # Note: deletion on Windows is not synchronous. OK here since the result of deleting is not
-    # 'used immediately after the delete call'. Reliable solution in the AutoStar_Support
-    # component if needed.
+def _delete_intermediate_pdb_files(path: Path) -> None:
+    """Delete the intermediate pdb files from the path supplied.
+
+    Note: deletion on Windows is not synchronous. OK here since the result of
+    deleting is not 'used immediately after the delete call'. Reliable
+    solution in the AutoStar_Support component if needed.
+     """
     int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
                 if not int_pdb.match("*win_amd64.pdb")]
     print(f"{mod_name}: remove {len(int_pdbs)} intermediate pdbs from: {path}")
@@ -273,7 +297,10 @@ def _delete_intermediate_pdb_files(path):
         print(f"    deleted fle: {int_pdb}")
 
 
-def _copy_final_pdb_files(path):
+def _copy_final_pdb_files(path: Path) -> None:
+    """For the path supplied copy the final .pdb files to the same location as
+    the corresponding .pyx files.
+    """
     int_sub_dir = r"build\lib.win-amd64-3.6"
     int_dir = Path(path).parent / int_sub_dir
 
@@ -286,9 +313,11 @@ def _copy_final_pdb_files(path):
         print(f"    dst file: {dst_file}")
 
 
-def _check_results(path, num_files_compiled) -> int:
+def _check_results(path: Path, num_files_compiled: int) -> int:
     """ Check that the number of pyd & pdb files generated equals the number
     of source files that were compiled.
+
+    Return 0 if ok else return non-zero.
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
     num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
@@ -306,8 +335,8 @@ def _check_results(path, num_files_compiled) -> int:
 
 
 def main():
-    # Undo the compiler path: this will handle most exits of the program apart
-    # from 'really bad crashes', see atexit docs.
+    # Undo the compiler patch when the program exits: this will handle most
+    # scenarios apart from 'really bad crashes', see atexit docs.
     atexit.register(_patch_msvc_compiler, optimize=True)
     path, options = _construct_options()
 
