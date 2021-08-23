@@ -229,4 +229,5 @@ docs/_build
 
 # dir AutoStar setup.py typically uses
 /to_transpile2/cythonized
+/to_transpile3
 
