@@ -68,4 +68,3 @@ def test_find_dist_base_autostar():
             print(f"checking: {autostar_dir}")
             print(f"    base_dir:       {base_dir}")
             print(f"    package_root:   {package_root}")
-

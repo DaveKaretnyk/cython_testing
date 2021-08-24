@@ -89,16 +89,16 @@ class TestCythonize(unittest.TestCase):
         cythonize._copy_tree(self.test_source_dist, self.test_destination_dir)
         assert filecmp.dircmp(self.test_source_dist, self.test_destination_dir)
 
-        # add a new file to and to copy tree of test_source_dist to test_destination_dist and check that
-        # that test_source_dist and test_destination_dist are equal
+        # add a new file to and to copy tree of test_source_dist to test_destination_dist and
+        # check that that test_source_dist and test_destination_dist are equal
         new_source_file = os.path.join(self.test_source_dist, "src.py")
         TestCythonize._create_dummy_file(self, new_source_file)
         new_destination_file = os.path.join(self.test_destination_dir, "src.py")
         cythonize._copy_tree(self.test_source_dist, self.test_destination_dir)
         assert filecmp.dircmp(self.test_source_dist, self.test_destination_dir)
 
-        # change modification time of a file in test_source_dist, do the _copy_tree and check that only that file
-        # as been updated in test_destination_dist)
+        # change modification time of a file in test_source_dist, do the _copy_tree and check
+        # that only that file as been updated in test_destination_dist)
 
         # in windows the resolution for the os.stat(src_file).st_mtime is 2 seconds so
         # if we want to check for the modification time, we need to wait 2 seconds
@@ -130,18 +130,20 @@ class TestCythonize(unittest.TestCase):
         assert not os.path.exists(target_directory_dist)
         assert not os.path.exists(target_directory_egg_info)
 
-    # Test that _create_pyx_file creates a new pyx file only if pyd file does not exists or is outdated
+    # Test that _create_pyx_file creates a new pyx file only if pyd file does not exists or is
+    # outdated
     def test_create_pyx_file(self):
         cythonize._copy_tree(self.test_source_dist, self.test_destination_dir)
         include_packages = os.path.join(self.test_destination_dir, "included_packages")
-        source_folder_py_file = os.path.join(self.test_source_dist, "included_packages\\included_py_module.py")
+        source_folder_py_file = os.path.join(self.test_source_dist,
+                                             "included_packages\\included_py_module.py")
         py_file = os.path.join(include_packages, "included_py_module.py")
         pyd_file = os.path.join(include_packages, "included_py_module.pyd")
         pyx_file = os.path.join(include_packages, "included_py_module.pyx")
         cythonize._create_pyx_file(include_packages, py_file)
         # We saw intermittent failure of this test during automated build.
-        # I add here a small sleep to validate whether the issue is related to maybe some timing aspects
-        # of the file system
+        # I add here a small sleep to validate whether the issue is related to maybe some timing
+        # aspects of the file system
         time.sleep(5)
         assert not os.path.exists(py_file)
         assert os.path.exists(pyx_file)
@@ -186,8 +188,8 @@ class TestCythonize(unittest.TestCase):
         assert not os.path.exists(c_file)
         assert os.path.exists(pyx_file)
 
-    # Test that that _remove_unwanted_incr_files works properly and in case of non incremental build
-    # it just removes the complete folder with incremental files
+    # Test that that _remove_unwanted_incr_files works properly and in case of non incremental
+    # build it just removes the complete folder with incremental files
     def test_remove_unwanted_incr_files(self):
         # copy a tree to a non existing one and check that the new tree is a copy of the source
         cythonize._copy_tree(self.test_source_dist, self.test_destination_dir)
@@ -264,8 +266,8 @@ class TestCythonize(unittest.TestCase):
             CYTHON_EXCLUDED_MODULES,
             False)
 
-        # validate that no included_py_module.pyx has not been created and that included_py_module.pyd
-        # has not been modified
+        # validate that no included_py_module.pyx has not been created and that included_py
+        # module.pyd has not been modified
         test_destination_dist_path = os.path.join(self.test_destination_dir, dist_name)
         included_packages = os.path.join(test_destination_dist_path, "included_packages")
         pyx_file = os.path.join(included_packages, "included_py_module.pyx")
@@ -292,8 +294,9 @@ class TestCythonize(unittest.TestCase):
         pyd_file_mod_time_new = os.stat(pyd_file).st_mtime
         assert abs(pyd_file_mod_time_new - pyd_file_mod_time) < 1
 
-        # simulate the situation were there is a remaining pyd from a previous cython and the corresponding
-        # py file was removed. I do that by creating a new pyd in the destination folder
+        # simulate the situation were there is a remaining pyd from a previous cython and the
+        # corresponding py file was removed. I do that by creating a new pyd in the destination
+        # folder
         pyd_file_2 = os.path.join(included_packages, "included_py_module_2.pyd")
         TestCythonize._create_dummy_file(self, pyd_file_2)
         cythonize._create_pyx_packages(
@@ -340,4 +343,5 @@ class TestCythonize(unittest.TestCase):
         extensions = cythonize._collect_extensions(self.test_destination_dir)
         assert len(extensions) == 1
 
-    # TODO: Find out a way to unit test 'python setup.py cythonize' and 'python setup.py cythonize_incremental'
+    # TODO: Find out a way to unit test 'python setup.py cythonize' and 'python setup.py
+    #  cythonize_incremental'
