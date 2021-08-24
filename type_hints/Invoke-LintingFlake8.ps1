@@ -25,11 +25,9 @@ $envName = $args
 # Assumption: using an EDM env located in the standard location.
 $activateScript = "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
 if (-not (Test-Path -Path $activateScript -PathType Leaf)) {
-    Out-Host -InputObject ('Invoke-TfsCythonize: no such env: {0}' -f $envName)
+    Out-Host -InputObject ('Invoke-LintingFlake8: no such env: {0}' -f $envName)
     Exit 3
 }
-& $activateScript
-Out-Host -InputObject ('Invoke-TfsCythonize: activate env: {0}' -f $envName)
 
 $exitCode = 0
 $sourceDir = Resolve-Path -Path "$PSScriptRoot\.."
@@ -51,9 +49,13 @@ if (Test-Path $codeOutputFile -PathType Leaf) {
 
 Out-Host -InputObject ('Invoke-LintingFlake8: checking directory: {0}' -f $sourceDir)
 
+& $activateScript
+Out-Host -InputObject ('Invoke-LintingFlake8: activate env: {0}' -f $envName)
+
 flake8.exe $soureDir  --config "$PSScriptRoot\tox.ini"  --output=$codeOutputFile
 
 deactivate # the Python env
+Out-Host -InputObject ('Invoke-LintingFlake8: deactivate env: {0}' -f $envName)
 
 $exitCode = $LASTEXITCODE
 if ($exitCode -ne 0) {
