@@ -57,17 +57,19 @@ from pprint import pprint
 from pathlib import Path, PurePath
 import multiprocessing
 from argparse import ArgumentParser
-
+from typing import Any, Dict, List, Tuple
 
 mod_name = str(Path(__file__).stem)
 
 
 # noinspection DuplicatedCode
-def _patch_msvc_compiler(optimize=False):
-    """ Switches the Visual Studio compiler C optimization flag off / on.
+def _patch_msvc_compiler(optimize: bool = False) -> None:
+    """ Switches the Visual Studio compiler C optimization flag on / off.
 
     This is done by changing the flag in the distutils module source file so
     must be called before that module is imported.
+
+    :param optimize optimization on/off
     """
     print(f"{mod_name}._patch_msvc_compiler: optimize? {optimize}")
 
@@ -95,12 +97,12 @@ from Cython.Build.Dependencies import cythonize         # noqa
 from Cython.Compiler import Options as CythonOptions    # noqa
 
 
-class TranspileArgs:
-    """ Define the Cython build transpile arguments.
+class TranspileDirectives:
+    """ Define the Cython build transpile directives.
 
     * path is mandatory & must be supplied as a positional command line arg.
-    * some args can be optionally supplied on the commend line.
-    * some args are only defined here, i.e. cannot be specified on command
+    * some directives can be optionally supplied on the commend line.
+    * some directives are only defined here, i.e. cannot be specified on command
       line.
     """
     def __init__(self) -> None:
@@ -109,12 +111,12 @@ class TranspileArgs:
 
         # These args are only defined here.
         self.directives = {'language_level': 3}
-        self.options = {}
+        self.options: Dict[Any, Any] = {}
         self.build = True
         self.lenient = None
         self.keep_going = None
         self.emit_linenums = True
-        self.excludes = []
+        self.excludes: List[str] = []
 
         # These args might be supplied via the command line.
         self.parallel = 0
@@ -123,7 +125,19 @@ class TranspileArgs:
         self.quiet = False
 
 
-def create_extension(target, package_root):
+def create_extension(target: str, package_root: str) -> Extension:
+    """ A .pyx file and the package root name are supplied. An extension
+    object defining how the file should be built is returned.
+
+    * Key compiler directives are hardcoded in this function.
+    * Package root name: e.g. 'fei_common' or 'fei_stage. Needed to compute
+      the full dotted name for the module. For example:
+      'fei_common.infra.tem_service.api'.
+
+    :param target: .pyx file to be processed
+    :param package_root: root name of the package
+    :return: object defining how the file will be built
+    """
     if package_root not in target:
         raise ValueError(f"'{package_root}' not found in file name: '{target}'")
 
@@ -152,7 +166,7 @@ def create_extension(target, package_root):
     )
 
 
-def find_dist_base(path: PurePath) -> (PurePath, str):
+def find_dist_base(path: PurePath) -> Tuple[PurePath, str]:
     """ For the path supplied return the base directory and the root name of
     the package / dist as a tuple.
 
@@ -163,11 +177,23 @@ def find_dist_base(path: PurePath) -> (PurePath, str):
     This is different from the equivalent function in the Cython code base
     which computes the root name based on the location of the top most
     __init__.py file. For most AutoStar components that will not work.
+
+    :param path the directory to be processed
+    :return base directory and package root
     """
     return path.parent, path.stem
 
 
-def cython_compile(path, options) -> int:
+def cython_compile(path: Path, options: TranspileDirectives) -> int:
+    """ Execute the Cython build.
+
+    Perform the Cython build of all .pyx files in the supplied directory using
+    the directives supplied.
+
+    :param path the directory to be processed
+    :param options the directives to be used for the build
+    :return 0 if ok, non-zero if problems
+    """
     pool = None
     try:
         base_dir, dist_root_name = find_dist_base(path)
@@ -208,7 +234,8 @@ def cython_compile(path, options) -> int:
     return num_files_compiled
 
 
-def run_distutils(args):
+def run_distutils(args) -> None:
+    """ TODO??? """
     base_dir, ext_modules = args
     script_args = ['build_ext', '-i']
     cwd = os.getcwd()
@@ -230,7 +257,15 @@ def run_distutils(args):
                 shutil.rmtree(temp_dir)
 
 
-def construct_options():
+def construct_directives() -> Tuple[Path, TranspileDirectives]:
+    """ Construct the build directives to use from the command line arguments
+    supplied to the program.
+
+    * Some build directives are supplied on the command line.
+    * Some build directives are hardcoded in this function
+
+    :return path to be processed & directives to build with
+    """
     parser = ArgumentParser(
         description="Cython build all pyx files in the supplied directory (recursively)")
     parser.add_argument("path", type=str, help="the path (directory) to be processed")
@@ -247,24 +282,31 @@ def construct_options():
                         help="generate annotated HTML for C source files "
                              "(use for diagnostics only, DO NOT USE in production builds)")
 
-    my_args = parser.parse_args(namespace=TranspileArgs())
-    path = Path(my_args.path).resolve()
+    my_directives = parser.parse_args(namespace=TranspileDirectives())
+    if my_directives is None or my_directives.path is None:
+        parser.error("problems parsing args!")
+    path = Path(my_directives.path).resolve()
     if not path.is_dir():
         parser.error(f"not a valid source dir: {path}")
 
-    if my_args.annotate:
+    if my_directives.annotate:
         CythonOptions.annotate = True
         print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
-        my_args.emit_linenums = False
+        my_directives.emit_linenums = False
 
-    return path, my_args
+    return path, my_directives
 
 
-def _delete_intermediate_pdb_files(path):
-    # Note: deletion on Windows is not synchronous. OK here since the result of deleting is not
-    # 'used immediately after the delete call'. Reliable solution in the AutoStar_Support
-    # component if needed.
+def delete_intermediate_pdb_files(path: Path) -> None:
+    """  Delete all intermediate pdb files from the path supplied.
+
+    Note: deletion on Windows is not synchronous. OK here since the result of
+    deleting is not 'used immediately after the delete call'. Reliable
+    solution in the AutoStar_Support component if needed.
+
+    :param path directory to be processed
+    """
     int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
                 if not int_pdb.match("*win_amd64.pdb")]
     print(f"{mod_name}: remove {len(int_pdbs)} intermediate pdbs from: {path}")
@@ -273,7 +315,11 @@ def _delete_intermediate_pdb_files(path):
         print(f"    deleted fle: {int_pdb}")
 
 
-def _copy_final_pdb_files(path):
+def copy_final_pdb_files(path: Path) -> None:
+    """ Copy the final pdb files next to the .pyx files that were processed.
+
+    :param path directory to be processed
+    """
     int_sub_dir = r"build\lib.win-amd64-3.6"
     int_dir = Path(path).parent / int_sub_dir
 
@@ -286,9 +332,13 @@ def _copy_final_pdb_files(path):
         print(f"    dst file: {dst_file}")
 
 
-def _check_results(path, num_files_compiled) -> int:
+def check_results(path: Path, num_files_compiled: int) -> int:
     """ Check that the number of pyd & pdb files generated equals the number
     of source files that were compiled.
+
+    :param path directory to be processed
+    :param num_files_compiled expected number of files
+    :return 0 if OK, non-zero if not
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
     num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
@@ -309,20 +359,20 @@ def main():
     # Undo the compiler path: this will handle most exits of the program apart
     # from 'really bad crashes', see atexit docs.
     atexit.register(_patch_msvc_compiler, optimize=True)
-    path, options = construct_options()
+    path, directives = construct_directives()
 
     start_time = datetime.now()
     print(f"{mod_name} START TIME:   {start_time}")
     print(f"    available (logical) cpus: {multiprocessing.cpu_count()}")
 
     print(f"{mod_name}: source dir: {path}")
-    print(f"{mod_name}: options:")
-    pprint(options.__dict__, indent=4)
+    print(f"{mod_name}: directives:")
+    pprint(directives.__dict__, indent=4)
 
-    num_files_compiled = cython_compile(path, options)
-    _delete_intermediate_pdb_files(path)
-    _copy_final_pdb_files(path)
-    success = _check_results(path, num_files_compiled)
+    num_files_compiled = cython_compile(path, directives)
+    delete_intermediate_pdb_files(path)
+    copy_final_pdb_files(path)
+    success = check_results(path, num_files_compiled)
 
     print(f"{mod_name} START TIME:   {start_time}")
     print(f"{mod_name} FINISH TIME:  {datetime.now()}")

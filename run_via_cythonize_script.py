@@ -19,7 +19,7 @@ my_args = [
 #     sys.exit(main())
 
 if __name__ == '__main__':
-    import sys
+    # import sys
     from Cython.Build.Cythonize import parse_args, cython_compile
     options, paths = parse_args(my_args)
 
