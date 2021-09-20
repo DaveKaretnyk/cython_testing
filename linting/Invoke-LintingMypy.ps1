@@ -4,9 +4,9 @@
 
 <#
     .SYNOPSIS
-    Run Python mypy check.
+    Run Python mypy check on 'tfs_cythonize.py'.
     .DESCRIPTION
-    Run Python mypy check.
+    Run Python mypy check on 'tfs_cythonize.py'.
     * Initial tryout of mypy: needs looked at more closely and options refined.
     * The Python environment to use is passed is passed as an arg.
 
@@ -21,7 +21,7 @@ if ($args.Length -ne 1) {
     Out-Host -InputObject 'Invoke-LintingMypy: Python env must be supplied as arg'
     Exit 1
 }
-$envName = $args
+$envName = $args[0]
 
 # Assumption: using an EDM env located in the standard location.
 $activateScript = "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
@@ -51,12 +51,12 @@ Out-Host -InputObject ('Invoke-LintingMypy: activate env: {0}' -f $envName)
 
 $myArgs = @(
     $sourceDir,
-    '--config-file', "$PSScriptRoot\tox.ini",
+    '--config-file',            "$PSScriptRoot\tox.ini",
     # options need looked into, e.g. Jenkins build results look different to local run?
-    '--any-exprs-report', $resultsDir
-    # '--html-report', $resultsDir, needs configured properly? output not navigable?
+    '--any-exprs-report',       $resultsDir
+    # '--html-report',          $resultsDir, needs configured properly? output not navigable?
     # '--lineprecision-report', $resultsDir,
-    # '--txt-report', $resultsDir  needs lxml ...
+    # '--txt-report',           $resultsDir  needs lxml ...
 )
 & mypy.exe $myArgs
 

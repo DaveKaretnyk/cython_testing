@@ -20,7 +20,7 @@ if ($args.Length -ne 1) {
     Out-Host -InputObject 'Invoke-LintingFlake8: Python env must be supplied as arg'
     Exit 1
 }
-$envName = $args
+$envName = $args[0]
 
 # Assumption: using an EDM env located in the standard location.
 $activateScript = "C:\FEI\Python\EDM\envs\$envName\Scripts\Activate.ps1"
