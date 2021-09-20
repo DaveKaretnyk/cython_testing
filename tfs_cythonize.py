@@ -69,7 +69,7 @@ def _patch_msvc_compiler(optimize: bool = False) -> None:
     This is done by changing the flag in the distutils module source file so
     must be called before that module is imported.
 
-    :param optimize optimization on/off
+    :param optimize: switch optimization on/off
     """
     print(f"{mod_name}._patch_msvc_compiler: optimize? {optimize}")
 
@@ -126,9 +126,11 @@ class TranspileDirectives:
 
 
 def create_extension(target: str, package_root: str) -> Extension:
-    """ A .pyx file and the package root name are supplied. An extension
-    object defining how the file should be built is returned.
+    """ For the target directory and package root supplied return a setuptools
+    Extension instance.
 
+    * The extension instance defines how the generated C source file will be
+      compiled.
     * Key compiler directives are hardcoded in this function.
     * Package root name: e.g. 'fei_common' or 'fei_stage. Needed to compute
       the full dotted name for the module. For example:
@@ -178,20 +180,18 @@ def find_dist_base(path: PurePath) -> Tuple[PurePath, str]:
     which computes the root name based on the location of the top most
     __init__.py file. For most AutoStar components that will not work.
 
-    :param path the directory to be processed
-    :return base directory and package root
+    :param path: the directory to be processed
+    :return base: directory and package root
     """
     return path.parent, path.stem
 
 
 def cython_compile(path: Path, options: TranspileDirectives) -> int:
-    """ Execute the Cython build.
+    """ Perform the Cython build of all .pyx files in the supplied directory
+    using the directives supplied. Return the number of files processed.
 
-    Perform the Cython build of all .pyx files in the supplied directory using
-    the directives supplied.
-
-    :param path the directory to be processed
-    :param options the directives to be used for the build
+    :param path: directory to be processed
+    :param options: directives to be used in the build
     :return 0 if ok, non-zero if problems
     """
     pool = None
@@ -235,7 +235,14 @@ def cython_compile(path: Path, options: TranspileDirectives) -> int:
 
 
 def run_distutils(args) -> None:
-    """ TODO??? """
+    """ Run distutils on the args supplied.
+
+    * args is a tuple of base directory & module list.
+    * args are passed like this to allow use of pool.map_aysnc when compiling
+      the modules in parallel with multiple processes.
+
+    :param args: tuple of base directory and module list
+    """
     base_dir, ext_modules = args
     script_args = ['build_ext', '-i']
     cwd = os.getcwd()
@@ -245,10 +252,7 @@ def run_distutils(args) -> None:
             os.chdir(base_dir)
             temp_dir = tempfile.mkdtemp(dir=base_dir)
             script_args.extend(['--build-temp', temp_dir])
-        setup(
-            script_name='setup.py',
-            script_args=script_args,
-            ext_modules=ext_modules,
+        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,
         )
     finally:
         if base_dir:
@@ -264,7 +268,7 @@ def construct_directives() -> Tuple[Path, TranspileDirectives]:
     * Some build directives are supplied on the command line.
     * Some build directives are hardcoded in this function
 
-    :return path to be processed & directives to build with
+    :return path: to be processed & directives to build with
     """
     parser = ArgumentParser(
         description="Cython build all pyx files in the supplied directory (recursively)")
@@ -305,7 +309,7 @@ def delete_intermediate_pdb_files(path: Path) -> None:
     deleting is not 'used immediately after the delete call'. Reliable
     solution in the AutoStar_Support component if needed.
 
-    :param path directory to be processed
+    :param path: directory to be processed
     """
     int_pdbs = [int_pdb for int_pdb in Path(path).rglob("*.pdb")
                 if not int_pdb.match("*win_amd64.pdb")]
@@ -316,9 +320,10 @@ def delete_intermediate_pdb_files(path: Path) -> None:
 
 
 def copy_final_pdb_files(path: Path) -> None:
-    """ Copy the final pdb files next to the .pyx files that were processed.
+    """For the path supplied copy the final .pdb files to the same location as
+    the corresponding .pyx files.
 
-    :param path directory to be processed
+    :param path: directory to be processed
     """
     int_sub_dir = r"build\lib.win-amd64-3.6"
     int_dir = Path(path).parent / int_sub_dir
@@ -334,10 +339,10 @@ def copy_final_pdb_files(path: Path) -> None:
 
 def check_results(path: Path, num_files_compiled: int) -> int:
     """ Check that the number of pyd & pdb files generated equals the number
-    of source files that were compiled.
+    of source files that were compiled. Return 0 if OK else return non-zero.
 
-    :param path directory to be processed
-    :param num_files_compiled expected number of files
+    :param path: directory to be processed
+    :param num_files_compiled: expected number of files
     :return 0 if OK, non-zero if not
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
