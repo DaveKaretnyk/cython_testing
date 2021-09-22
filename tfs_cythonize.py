@@ -110,7 +110,12 @@ class TranspileDirectives:
         """ Path (dir) to process"""
 
         # These args are only defined here.
-        self.directives = {'language_level': 3}
+        self.directives = {
+            # language level to 3.X, else prints with keyword parameters do not compile
+            'language_level':           3,
+            # allow functions with single positional para to be called with single keyword para
+            'always_allow_keywords':    True,
+        }
         self.options: Dict[Any, Any] = {}
         self.build = True
         self.lenient = None
