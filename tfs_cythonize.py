@@ -11,6 +11,8 @@ Transpiles (cythonizes) all .pyx files in the directory given as input.
                   in production builds for now
     * --force: rebuild even if not source file changes
     * --quiet: less verbose during Cython compile (no effect on C compile)
+    * --single_keyword_arg: set directive always_allow_keywords true, DO NOT
+                            USE in production code builds for now
 
 Prerequisites:
 * Visual Studio 2017 must be installed on the system.
@@ -258,8 +260,7 @@ def run_distutils(args) -> None:
             os.chdir(base_dir)
             temp_dir = tempfile.mkdtemp(dir=base_dir)
             script_args.extend(['--build-temp', temp_dir])
-        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,
-        )
+        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,)
     finally:
         if base_dir:
             os.chdir(cwd)
