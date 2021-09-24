@@ -114,7 +114,7 @@ class TranspileDirectives:
             # language level to 3.X, else prints with keyword parameters do not compile
             'language_level':           3,
             # allow functions with single positional para to be called with single keyword para
-            'always_allow_keywords':    True,
+            'always_allow_keywords':    False,
         }
         self.options: Dict[Any, Any] = {}
         self.build = True
@@ -128,6 +128,7 @@ class TranspileDirectives:
         self.annotate = False
         self.force = False
         self.quiet = False
+        self.single_keyword_arg = False
 
 
 def create_extension(target: str, package_root: str) -> Extension:
@@ -290,6 +291,10 @@ def construct_directives() -> Tuple[Path, TranspileDirectives]:
     parser.add_argument("-a", "--annotate", dest="annotate", action="store_true",
                         help="generate annotated HTML for C source files "
                              "(use for diagnostics only, DO NOT USE in production builds)")
+    parser.add_argument("-s", "--single_keyword_arg", dest="single_keyword_arg",
+                        action="store_true",
+                        help="set directive always_allow_keywords "
+                             "(for experimentation only, DO NOT USE in production builds)")
 
     my_directives = parser.parse_args(namespace=TranspileDirectives())
     if my_directives is None or my_directives.path is None:
@@ -302,7 +307,13 @@ def construct_directives() -> Tuple[Path, TranspileDirectives]:
         CythonOptions.annotate = True
         print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
+        print(f"{mod_name}:     should no be used in production builds")
         my_directives.emit_linenums = False
+
+    if my_directives.single_keyword_arg:
+        my_directives.directives['always_allow_keywords'] = True
+        print(f"{mod_name}: WARNING:directive always_allow_keywords is True")
+        print(f"{mod_name}:     should no be used in production builds")
 
     return path, my_directives
 
