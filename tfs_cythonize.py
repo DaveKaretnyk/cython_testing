@@ -11,6 +11,8 @@ Transpiles (cythonizes) all .pyx files in the directory given as input.
                   in production builds for now
     * --force: rebuild even if not source file changes
     * --quiet: less verbose during Cython compile (no effect on C compile)
+    * --single_keyword_arg: set directive always_allow_keywords true, DO NOT
+                            USE in production code builds for now
 
 Prerequisites:
 * Visual Studio 2017 must be installed on the system.
@@ -110,7 +112,12 @@ class TranspileDirectives:
         """ Path (dir) to process"""
 
         # These args are only defined here.
-        self.directives = {'language_level': 3}
+        self.directives = {
+            # language level to 3.X, else prints with keyword parameters do not compile
+            'language_level':           3,
+            # allow functions with single positional para to be called with single keyword para
+            'always_allow_keywords':    False,
+        }
         self.options: Dict[Any, Any] = {}
         self.build = True
         self.lenient = None
@@ -123,6 +130,7 @@ class TranspileDirectives:
         self.annotate = False
         self.force = False
         self.quiet = False
+        self.single_keyword_arg = False
 
 
 def create_extension(target: str, package_root: str) -> Extension:
@@ -252,8 +260,7 @@ def run_distutils(args) -> None:
             os.chdir(base_dir)
             temp_dir = tempfile.mkdtemp(dir=base_dir)
             script_args.extend(['--build-temp', temp_dir])
-        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,
-        )
+        setup(script_name='setup.py', script_args=script_args, ext_modules=ext_modules,)
     finally:
         if base_dir:
             os.chdir(cwd)
@@ -285,6 +292,10 @@ def construct_directives() -> Tuple[Path, TranspileDirectives]:
     parser.add_argument("-a", "--annotate", dest="annotate", action="store_true",
                         help="generate annotated HTML for C source files "
                              "(use for diagnostics only, DO NOT USE in production builds)")
+    parser.add_argument("-s", "--single_keyword_arg", dest="single_keyword_arg",
+                        action="store_true",
+                        help="set directive always_allow_keywords "
+                             "(for experimentation only, DO NOT USE in production builds)")
 
     my_directives = parser.parse_args(namespace=TranspileDirectives())
     if my_directives is None or my_directives.path is None:
@@ -297,7 +308,13 @@ def construct_directives() -> Tuple[Path, TranspileDirectives]:
         CythonOptions.annotate = True
         print(f"{mod_name}: WARNING:emit_linenums disabled because annotate option selected")
         print(f"{mod_name}:     this prevents post-mortem debugging back to .pyx source")
+        print(f"{mod_name}:     should no be used in production builds")
         my_directives.emit_linenums = False
+
+    if my_directives.single_keyword_arg:
+        my_directives.directives['always_allow_keywords'] = True
+        print(f"{mod_name}: WARNING:directive always_allow_keywords is True")
+        print(f"{mod_name}:     should no be used in production builds")
 
     return path, my_directives
 
@@ -346,7 +363,7 @@ def check_results(path: Path, num_files_compiled: int) -> int:
     :return 0 if OK, non-zero if not
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
-    num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
+    num_pyds = len([pyd for pyd in path.rglob("*.pyd") if "extensions" not in str(pyd)])
     print(f"{mod_name}: check compilation results:")
     print(f"    source files: {num_files_compiled}")
     print(f"    pdb files:    {num_pdbs}")
