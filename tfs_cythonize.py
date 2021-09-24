@@ -362,7 +362,7 @@ def check_results(path: Path, num_files_compiled: int) -> int:
     :return 0 if OK, non-zero if not
     """
     num_pdbs = len([pdb for pdb in path.rglob("*.pdb")])
-    num_pyds = len([pyd for pyd in path.rglob("*.pyd")])
+    num_pyds = len([pyd for pyd in path.rglob("*.pyd") if "extensions" not in str(pyd)])
     print(f"{mod_name}: check compilation results:")
     print(f"    source files: {num_files_compiled}")
     print(f"    pdb files:    {num_pdbs}")
