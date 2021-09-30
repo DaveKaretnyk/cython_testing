@@ -4,6 +4,10 @@ Just a repo for experimenting with Cython, e.g. building.
 
 Details with Dave Karetnyk.
 
+build
+-----
+Normally directory for build, test results etc.
+
 cython_scripts
 --------------
 Just for convenience, copies of the scripts that are installed by the Cython
@@ -17,6 +21,11 @@ control (apart from __int__.py).
 linting
 -------
 Contains some scripts for experimenting with linting tools.
+
+specific_constucts
+------------------
+Examples of specific constructs that cause problems when transpiling via
+Cython.
 
 tests
 -----
