@@ -10,4 +10,7 @@ This option will be switched on by default in Cython version 3.0 and later.
 However switching this directive on might cause problems for transpiled Python
 code that interfaces to the C++ Qt library bindings, e.g. PyQt5.X.
 
+More information:
+* https://thermofisher-asg.atlassian.net/browse/ASP-1430
+
 TODO??? Example of problem in this directory.
