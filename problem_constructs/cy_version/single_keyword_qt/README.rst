@@ -1,5 +1,5 @@
-Single keyword calls
-====================
+Single keyword calls and Qt
+===========================
 Calling a function, or class static method, wth a single keyword parameter
 when the function is defined to take a single positional parameter does not
 work by default in Cython versions earlier than 3.0.
