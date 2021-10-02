@@ -4,6 +4,10 @@ def say_hello_to(name):
 
 
 def say_hello_to_keyword(name="betty"):
+    # Possible solution: change the function definition to expect a single keyword parameter
+    # rather than a single positional parameter. But take possible future changes into account.
+    # E.g. positional parameters cannot be added to the function definition without also changing
+    # all calls.
     return f"hello {name}"
 
 

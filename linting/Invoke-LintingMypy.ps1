@@ -31,10 +31,17 @@ if (-not (Test-Path -Path $activateScript -PathType Leaf)) {
 }
 
 $exitCode = 0
-$sourceDir = Resolve-Path -Path  "$PSScriptRoot\..\tfs_cythonize.py"
+$fileList = @()
+$fileList += Resolve-Path -Path "$PSScriptRoot\..\tfs_cythonize.py"
+$probConstructs = Resolve-Path -Path "$PSScriptRoot\..\problem_constructs"
+$fileList += "$probConstructs\py_version\type_hints_syntax_error\type_hints_syntax_error.py"
 
-Out-Host -InputObject 'Invoke-LintingMypy: Running mypy check'
-Out-Host -InputObject 'Invoke-LintingMypy: ******************'
+Out-Host -InputObject 'Invoke-LintingMypy: Running mypy check on files:'
+Out-Host -InputObject 'Invoke-LintingMypy: ****************************'
+foreach ($f in $fileList) {
+    Out-Host -InputObject ('    {0}' -f $f)
+}
+
 
 $resultsDir = Join-Path -Path $PSScriptRoot -ChildPath '..\build\TestResults\mypy'
 if (Test-Path $resultsDir -PathType Container) {
@@ -44,13 +51,10 @@ if (Test-Path $resultsDir -PathType Container) {
 New-Item -ItemType Directory -Force -Path $resultsDir
 Out-Host -InputObject ('Invoke-LintingMypy: created dir for results: {0}' -f $resultsDir)
 
-Out-Host -InputObject ('Invoke-LintingMypy: checking directory: {0}' -f $sourceDir)
-
 & $activateScript
 Out-Host -InputObject ('Invoke-LintingMypy: activate env: {0}' -f $envName)
 
 $myArgs = @(
-    $sourceDir,
     '--config-file',            "$PSScriptRoot\tox.ini",
     # options need looked into, e.g. Jenkins build results look different to local run?
     '--any-exprs-report',       $resultsDir
@@ -58,7 +62,7 @@ $myArgs = @(
     # '--lineprecision-report', $resultsDir,
     # '--txt-report',           $resultsDir  needs lxml ...
 )
-& mypy.exe $myArgs
+& mypy.exe $fileList $myArgs
 
 deactivate
 Out-Host -InputObject ('Invoke-LintingMypy: deactivate env: {0}' -f $envName)
