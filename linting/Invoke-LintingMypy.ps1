@@ -35,6 +35,7 @@ $fileList = @()
 $fileList += Resolve-Path -Path "$PSScriptRoot\..\tfs_cythonize.py"
 $probConstructs = Resolve-Path -Path "$PSScriptRoot\..\problem_constructs"
 $fileList += "$probConstructs\py_version\type_hints_syntax_error\type_hints_syntax_error.py"
+$fileList += "$probConstructs\py_version\type_hints_spec_wrong\type_hints_spec_wrong.py"
 
 Out-Host -InputObject 'Invoke-LintingMypy: Running mypy check on files:'
 Out-Host -InputObject 'Invoke-LintingMypy: ****************************'
