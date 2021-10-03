@@ -2,8 +2,23 @@ Type hint specification wrong
 =============================
 
 **Description**
-What happens in the type hint is wrong? E.g. indicates that a parameter should
-be a str but it is called with an int.
+What happens if the type hint is wrong? E.g. hint indicates that a parameter
+should be a str but it is called with an int.
+
+Type hints are used by Cython. That is, what is specified in the type hint
+should match what actually happens at runtime. This is somewhat logical since
+it is consistent with how Python code is normally augmented to allow
+performance improvements using Cython. E.g.:
+
+    def integrate_f(double a, double b, int N):
+        cdef int i
+        cdef double s
+        cdef double dx
+        s = 0
+        dx = (b - a) / N
+        for i in range(N):
+            s += f(a + i * dx)
+        return s * dx
 
 Python code runs OK. Error flagged, e.g., by both mypy and PyCharm editor.
 
