@@ -4,6 +4,10 @@ def say_hello_to(name):
 
 
 def say_hello_to_keyword(name="betty"):
+    # Possible solution: change the function definition to expect a single keyword parameter
+    # rather than a single positional parameter. But take possible future changes into account.
+    # E.g. positional parameters cannot be added to the function definition without also changing
+    # all calls.
     return f"hello {name}"
 
 
@@ -21,10 +25,10 @@ class BedrockCity:
 
 
 def welcome_wilma():
-    # Calling a function with a keyword parameter that defines a single positional parameter
+    # Calling a function that defines a single positional parameter with a keyword parameter
     # requires the 'always_allow_keywords' Cython directive. Otherwise exception raised:
     #       TypeError: say_hello_to() takes no keyword arguments
-    # This option will be on by default from Cython 3.0 onwards.
+    # This option will be on by default from Cython 3.0 onwards!
     welcome = say_hello_to(name="Wilma")
     print(f"{welcome}")
 
@@ -38,7 +42,7 @@ def welcome_fred():
 
 def welcome_barney():
     # This is OK without the 'always_allow_keywords' directive because the function called has
-    # defined a single keyword parameter, not a single positional parameter.
+    # been defined to take a single keyword parameter, not a single positional parameter.
     welcome = say_hello_to_keyword("Barney")
     print(f"{welcome}")
 
@@ -56,6 +60,6 @@ def welcome_dino():
     print(f"{welcome} ... from BedrockCity class method")
 
     # This is not OK without the 'always_allow_keywords' directive because just tne name parameter
-    # is passed, i.e. no additional implicit parameters are passed..
+    # is passed, i.e. no additional implicit parameters are passed.
     welcome = BedrockCity.say_hello_to_static(name="Dino")
     print(f"{welcome} ... from BedrockCity static method")
