@@ -22,7 +22,7 @@ linting
 -------
 Contains some scripts for experimenting with linting tools.
 
-specific_constucts
+problem_constructs
 ------------------
 Examples of specific constructs that cause problems when transpiling via
 Cython.

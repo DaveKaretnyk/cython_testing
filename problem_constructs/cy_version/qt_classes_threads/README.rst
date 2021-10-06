@@ -1,7 +1,8 @@
 QThread class and signal handlers
 =================================
 
-Issues at least with QThread class and signal handlers.
+Issues with QThread class and signal handlers?
+Issues creating a Qt class from a module that has been transpiled?
 
 More information:
 * ???
