@@ -67,8 +67,9 @@ Function Set-CythonEnv {
     #     https://stevedower.id.au/blog/building-for-python-3-5-part-two
     $possibleDirs = @(
         # 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC', # Visual Studio 2015
-        'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build',
-        'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build'
+        # 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build',
+        # 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build'
+        'C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build'
     )
     $targetScript = 'VCVARSALL.bat' # note: this needs a parameter (e.g. amd64)
         
