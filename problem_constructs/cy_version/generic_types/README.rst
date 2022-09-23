@@ -10,3 +10,6 @@ Python code runs OK.
 
 TypeError: 'type' object is not subscriptable.
 TypeError: 'ABCMeta' object is not subscriptable.
+
+https://thermofisher-asg.atlassian.net/browse/APITS-260
+https://github.com/cython/cython/issues/2753
