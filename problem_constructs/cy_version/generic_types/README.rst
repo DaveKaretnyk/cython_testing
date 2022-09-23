@@ -1,5 +1,5 @@
-Call stack use
-==============
+Generic types and type hints
+============================
 
 **Description**
 Use of some generic types in type hints causing issues.
