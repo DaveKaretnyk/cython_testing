@@ -1,11 +1,9 @@
 #  Copyright (c) 2020 by Thermo Fisher Scientific
 #  All rights reserved. This file includes confidential and proprietary information
 #  of Thermo Fisher Scientific
-from inspect import isabstract
-
 import pytest
 
-from .value_keyword import (
+from .value_keyword_360 import (
     FringeFreeIlluminationKeyWord, GunLensKeyWord, ImageCorrectorKeyWord, ProbeCorrectorKeyWord,
     MagnificationIndexKeyWord, SpotSizeKeyWord, MagnificationKeyWord, MicroscopeTypeKeyWord,
     ValueKeyWord)
@@ -46,10 +44,10 @@ class TestValueKeyWord:
         assert first != second
 
     @pytest.mark.parametrize("class_, length", [
-        (FringeFreeIlluminationKeyWord(True), 2),
-        (GunLensKeyWord(2.5), 8),
-        (SpotSizeKeyWord(1), 11),
-        (MagnificationIndexKeyWord(555), 16),
+        (FringeFreeIlluminationKeyWord, 2),
+        (GunLensKeyWord, 8),
+        (SpotSizeKeyWord, 11),
+        (MagnificationIndexKeyWord, 16),
     ])
     def test_type_length(self, class_, length):
         assert length == len(class_)
@@ -76,20 +74,3 @@ class TestValueKeyWord:
     def test_fringe_free_illumination_json_encode(self, fringe_free_illumination, exepected_result):
         assert (exepected_result
                 == FringeFreeIlluminationKeyWord(fringe_free_illumination).json_encode())
-
-
-# Added by Dave, can be removed...
-def test_sanity():
-    spot_size_keyword = SpotSizeKeyWord(5)
-    print(f"object type:    {type(spot_size_keyword)}")
-    print(f"object length:  {len(spot_size_keyword)}")
-    print(f"class length:   {len(SpotSizeKeyWord(1))}")
-    print(f"subclasses:     {SpotSizeKeyWord.__subclasses__}")
-    print(f"base classes:   {SpotSizeKeyWord.__bases__}")
-
-    all_subclasses = []
-    for subclass in SpotSizeKeyWord.__subclasses__():
-        print(f"subclass>>> {subclass}")
-        if not isabstract(subclass):
-            all_subclasses.append(subclass)
-    print(f"final list: {all_subclasses}")

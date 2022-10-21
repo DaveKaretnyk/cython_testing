@@ -8,7 +8,8 @@ from typing import Dict, Generic, GenericMeta, Type, TypeVar, Union
 
 from numpy import inf
 
-from fei_smali.infra.common.api import IJsonEncodable, JsonEncodable
+from .i_json_encodable import IJsonEncodable
+from .json_encodable import JsonEncodable
 
 _T = TypeVar("_T")
 

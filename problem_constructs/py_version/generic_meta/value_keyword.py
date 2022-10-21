@@ -8,32 +8,19 @@ from typing import Dict, Generic, Type, TypeVar, Union
 
 from numpy import inf
 
-from .i_json_encodable import  IJsonEncodable
+from .i_json_encodable import IJsonEncodable
 from .json_encodable import JsonEncodable
 
 _T = TypeVar("_T")
 
 
-class _GenericMeta(type):
-    pass
-
-
-class ValueKeyWordMeta(_GenericMeta):
+# pylint: disable=inherit-non-class
+class ValueKeyWord(Hashable, JsonEncodable, Generic[_T]):
     _type_length = 0  # defined in each child class
 
+    @classmethod
     def __len__(cls):
         return cls._type_length
-
-    def __hash__(cls):
-        return hash(cls.__name__)
-
-
-# pylint: disable=inherit-non-class
-# class ValueKeyWord(Hashable, JsonEncodable, Generic[_T], metaclass=ValueKeyWordMeta):
-# TODO??? Anaconda/Python 3.10: find better Python 3.10 way of doing this, this is the old
-# TODO??? Python 2.X to do it,
-class ValueKeyWord(Hashable, JsonEncodable, Generic[_T]):
-    __metaclass__ = ValueKeyWordMeta
 
     def __init__(self, value: _T) -> None:
         super(ValueKeyWord, self).__init__()
