@@ -13,4 +13,5 @@ https://peps.python.org/pep-0560/
 * 3.6.0 is not available via conda (main channel or even conda-forge channel). And the numpy
   version for 3.6.0 coming from conda-forge and does not work properly.
 
-* Cython code still to be tested.
+So not a Cython specific problem actually.
+

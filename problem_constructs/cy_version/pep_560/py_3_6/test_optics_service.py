@@ -1,7 +1,3 @@
-# Copyright(c) 2021 by Thermo Fisher Scientific
-# All rights reserved. This file includes confidential and proprietary information
-# of Thermo Fisher Scientific
-
 from .optics_service import OpticsService
 from .normalization import Normalization
 
@@ -11,3 +7,10 @@ def test_sanity_check_1():
     assert optics_service is not None
 
     optics_service.execute_normalizations(Normalization.Spotsize)
+
+
+def test_sanity_check_2():
+    optics_service = OpticsService()
+    optics_service.stigmator_set_condenser(1.2, 1.3)
+    optics_service.stigmator_set_condenser((1.21, 1.31))
+

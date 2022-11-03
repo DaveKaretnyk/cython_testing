@@ -12,13 +12,11 @@ Modify the code so that classes do not inherit from parameterized Generic ->
 Cython code runs OK. See files i_pyinteractivetask.pyx, interactive_task.pyx,
 pyinteractivetask_base.pyx and pytask_event.pyx.
 
-But does not always fail, see file column_mode.py in AutoStar_Common code?
-
 TypeError: 'type' object is not subscriptable.
 TypeError: 'ABCMeta' object is not subscriptable.
 
-https://thermofisher-asg.atlassian.net/browse/APITS-260
+However Cython code runs OK in 3.10 if Cython 3.X transpiler is used!!!
+
 
 https://github.com/cython/cython/issues/2753
-
 https://peps.python.org/pep-0560/
