@@ -342,7 +342,7 @@ def copy_final_pdb_files(path: Path) -> None:
 
     :param path: directory to be processed
     """
-    int_sub_dir = r"build\lib.win-amd64-3.6"
+    int_sub_dir = rf"build\lib.win-amd64-{sys.version_info.major}.{sys.version_info.minor}"
     int_dir = Path(path).parent / int_sub_dir
 
     src_files = [src_file for src_file in int_dir.rglob("*.pdb")
